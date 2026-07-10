@@ -24,23 +24,39 @@ Postgres via env vars. Google Sheets sync per event via a service account.
   timezone-aware datetimes (per-event timezone). Midnight-crossing panels
   (11:45 PM – 12:45 AM) are handled at parse time.
 
-## Setup
+## Install / upgrade (server)
+
+One script handles system packages (poppler-utils), the venv, migrations,
+static files, and the systemd units — idempotent, so it's also the upgrade path:
 
 ```bash
-sudo apt-get install poppler-utils   # for PDF layout upload
-python3 -m venv venv
-./venv/bin/pip install -r requirements.txt
-cp .env.example .env                 # set SECRET_KEY, ALLOWED_HOSTS
-# drop the Google service-account key at credentials.json (or set GOOGLE_CREDENTIALS_FILE)
-./venv/bin/python manage.py migrate
-./venv/bin/python manage.py createsuperuser
-./venv/bin/python manage.py runserver
+git clone https://github.com/jackson1719/ops-event-tools.git /opt/ops-event-tools
+cd /opt/ops-event-tools
+./deploy/install.sh
 ```
 
-Create an Event in the admin (`/admin/`), optionally with a spreadsheet ID, then:
+Then, on a fresh install:
+
+1. Edit `.env` — set `ALLOWED_HOSTS` (a random `SECRET_KEY` was generated for you).
+2. Drop the Google service-account key at `credentials.json` (or set
+   `GOOGLE_CREDENTIALS_FILE` in `.env`). Only needed for sheet-connected events.
+3. `./venv/bin/python manage.py createsuperuser`
+4. Create an Event in `/admin/` (optionally with a spreadsheet ID), assign users
+   to the Viewer/Staff/Manager/Admin groups, then:
 
 ```bash
 ./venv/bin/python manage.py sync_events <slug>     # or --all
+```
+
+## Development setup
+
+```bash
+python3 -m venv venv
+./venv/bin/pip install -r requirements.txt
+cp .env.example .env                 # set DEBUG=true for the dev server
+./venv/bin/python manage.py migrate
+./venv/bin/python manage.py createsuperuser
+./venv/bin/python manage.py runserver
 ```
 
 ## Expected spreadsheet tabs / columns
@@ -56,20 +72,22 @@ Create an Event in the admin (`/admin/`), optionally with a spreadsheet ID, then
 Dates accept `4/3/2026` or `2026-04-03`; times accept `9:00 AM` or `14:00`.
 Rows that fail to parse are skipped and reported on the event's Manage page.
 
-## Deployment
+## Services
 
-systemd units in `deploy/`:
-
-```bash
-sudo cp deploy/*.service deploy/*.timer /etc/systemd/system/
-sudo systemctl daemon-reload
-sudo systemctl enable --now ops-event-tools ops-sync.timer
-```
+Installed by `deploy/install.sh`:
 
 - `ops-event-tools.service` — gunicorn on port 3001 (whitenoise serves static)
-- `ops-sync.timer` — runs `manage.py sync_events --all` every 10 minutes
+- `ops-sync.timer` / `ops-sync.service` — runs `manage.py sync_events --all`
+  every 10 minutes (also clears expired sessions)
 
-Before first start: `./venv/bin/python manage.py collectstatic --noinput`.
+Useful commands:
+
+```bash
+sudo systemctl status ops-event-tools      # service health
+sudo journalctl -u ops-event-tools -f      # follow app logs
+sudo journalctl -u ops-sync -n 50          # recent sync runs
+sudo systemctl restart ops-event-tools     # after a code update
+```
 
 Postgres later: `pip install psycopg`, set `DB_ENGINE=postgresql` +
 `DB_NAME/DB_HOST/DB_USER/DB_PASSWORD` in `.env`, run `migrate`.
