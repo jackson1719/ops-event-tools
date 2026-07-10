@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block title %}Rooms — {{ event.name }}{% endblock %}
+
+{% block content %}
+<div class="row">
+  <!-- Room list: sidebar on desktop, full-width on mobile -->
+  <div class="col-md-3" id="room-list-col">
+    <h4 class="mb-3">Rooms</h4>
+    {% for building_name, room_list in buildings.items %}
+      <h6 class="text-muted mt-3">{{ building_name }}</h6>
+      <div class="list-group mb-2">
+        {% for room in room_list %}
+          <!-- Desktop: HTMX load into side panel -->
+          <a href="#"
+             class="list-group-item list-group-item-action room-link d-none d-md-block"
+             hx-get="{% url 'events:room_detail' event.slug room.pk %}"
+             hx-target="#room-detail"
+             hx-push-url="false">
+            <strong>{{ room.room_number }}</strong>
+            {% if room.room_number and room.name %} &mdash; {% endif %}
+            {{ room.name }}
+          </a>
+          <!-- Mobile: full-page overlay -->
+          <a href="#"
+             class="list-group-item list-group-item-action room-link-mobile d-md-none"
+             data-url="{% url 'events:room_detail' event.slug room.pk %}">
+            <div class="d-flex justify-content-between align-items-center">
+              <div>
+                <strong>{{ room.room_number }}</strong>
+                {% if room.room_number and room.name %} &mdash; {% endif %}
+                {{ room.name }}
+              </div>
+              <small class="text-muted">&rsaquo;</small>
+            </div>
+          </a>
+        {% endfor %}
+      </div>
+    {% empty %}
+      <p class="text-muted">No rooms found. Sync or add rooms in the admin.</p>
+    {% endfor %}
+  </div>
+
+  <!-- Detail panel: side panel on desktop -->
+  <div class="col-md-9 d-none d-md-block">
+    <div id="room-detail">
+      <p class="text-muted">Select a room from the list to view details.</p>
+    </div>
+  </div>
+</div>
+
+<!-- Mobile detail overlay (hidden by default) -->
+<div id="mobile-room-overlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;z-index:1050;background:#212529;overflow-y:auto;">
+  <div class="p-3">
+    <button id="mobile-back-btn" class="btn btn-outline-light btn-sm mb-3">&larr; Back to Rooms</button>
+    <div id="mobile-room-detail"></div>
+  </div>
+</div>
+
+<script>
+// Desktop: highlight active room
+document.body.addEventListener('htmx:afterOnLoad', function(evt) {
+  document.querySelectorAll('.room-link').forEach(el => el.classList.remove('active'));
+  if (evt.detail.elt.classList.contains('room-link')) {
+    evt.detail.elt.classList.add('active');
+  }
+});
+
+// Mobile: load room detail into overlay
+document.querySelectorAll('.room-link-mobile').forEach(function(link) {
+  link.addEventListener('click', function(e) {
+    e.preventDefault();
+    const url = this.dataset.url;
+    const overlay = document.getElementById('mobile-room-overlay');
+    const detail = document.getElementById('mobile-room-detail');
+
+    detail.innerHTML = '<p class="text-muted">Loading...</p>';
+    overlay.style.display = 'block';
+    document.body.style.overflow = 'hidden';
+
+    fetch(url).then(r => r.text()).then(html => {
+      detail.innerHTML = html;
+      detail.querySelectorAll('script').forEach(old => {
+        const s = document.createElement('script');
+        s.textContent = old.textContent;
+        old.replaceWith(s);
+      });
+    });
+  });
+});
+
+// Mobile: back button
+document.getElementById('mobile-back-btn').addEventListener('click', function() {
+  document.getElementById('mobile-room-overlay').style.display = 'none';
+  document.body.style.overflow = '';
+});
+</script>
+{% endblock %}

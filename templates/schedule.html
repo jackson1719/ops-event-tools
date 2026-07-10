@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+{% block title %}Full Schedule — {{ event.name }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h2>Full Schedule</h2>
+  <div class="d-flex gap-2">
+    <button class="btn btn-outline-light btn-sm d-md-none" type="button" data-bs-toggle="collapse" data-bs-target="#filter-panel">
+      Filters
+    </button>
+    <a href="#" id="print-btn" target="_blank" class="btn btn-outline-light btn-sm d-none d-md-inline-block">Print View</a>
+  </div>
+</div>
+
+<!-- Day tabs for mobile -->
+<div class="d-md-none mb-3">
+  <div class="btn-group w-100" role="group">
+    <button type="button" class="btn btn-outline-light btn-sm day-tab {% if not selected_day %}active{% endif %}" data-day="">All</button>
+    {% for d in days %}
+      <button type="button" class="btn btn-outline-light btn-sm day-tab {% if d.value == selected_day %}active{% endif %}" data-day="{{ d.value }}">
+        {{ d.label|slice:":3" }}
+      </button>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- Search bar always visible -->
+<div class="mb-3">
+  <input type="text" id="filter-search" class="form-control"
+         name="search" placeholder="Search events..."
+         value="{{ selected_search }}"
+         hx-get="{% url 'events:schedule_table' event.slug %}"
+         hx-include="#filter-building, #filter-room, #filter-day, #filter-av"
+         hx-target="#schedule-results"
+         hx-trigger="keyup changed delay:300ms">
+</div>
+
+<!-- Collapsible filters (collapsed on mobile, always visible on desktop) -->
+<div class="collapse d-md-block mb-4" id="filter-panel">
+  <div class="row g-3">
+    <div class="col-6 col-md-3">
+      <label class="form-label">Building</label>
+      <select id="filter-building" class="form-select"
+              name="building"
+              hx-get="{% url 'events:schedule_table' event.slug %}"
+              hx-include="#filter-room, #filter-day, #filter-av, #filter-search"
+              hx-target="#schedule-results"
+              hx-trigger="change">
+        <option value="">All Buildings</option>
+        {% for b in buildings %}
+          <option value="{{ b }}" {% if b == selected_building %}selected{% endif %}>{{ b }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-6 col-md-3">
+      <label class="form-label">Room</label>
+      <select id="filter-room" class="form-select"
+              name="room_number"
+              hx-get="{% url 'events:schedule_table' event.slug %}"
+              hx-include="#filter-building, #filter-day, #filter-av, #filter-search"
+              hx-target="#schedule-results"
+              hx-trigger="change">
+        <option value="">All Rooms</option>
+        {% for r in rooms %}
+          <option value="{{ r.room_number }}" {% if r.room_number == selected_room_number %}selected{% endif %}>{{ r.label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-6 col-md-3 d-none d-md-block">
+      <label class="form-label">Day</label>
+      <select id="filter-day" class="form-select"
+              name="day"
+              hx-get="{% url 'events:schedule_table' event.slug %}"
+              hx-include="#filter-building, #filter-room, #filter-av, #filter-search"
+              hx-target="#schedule-results"
+              hx-trigger="change">
+        <option value="">All Days</option>
+        {% for d in days %}
+          <option value="{{ d.value }}" {% if d.value == selected_day %}selected{% endif %}>{{ d.label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-6 col-md-3">
+      <label class="form-label">AV</label>
+      <select id="filter-av" class="form-select"
+              name="av"
+              hx-get="{% url 'events:schedule_table' event.slug %}"
+              hx-include="#filter-building, #filter-room, #filter-day, #filter-search"
+              hx-target="#schedule-results"
+              hx-trigger="change">
+        <option value="">All Events</option>
+        <option value="yes">AV Only</option>
+        <option value="no">No AV</option>
+      </select>
+    </div>
+  </div>
+</div>
+
+<div id="schedule-results"
+     hx-get="{% url 'events:schedule_table' event.slug %}"
+     hx-include="#filter-building, #filter-room, #filter-day, #filter-av, #filter-search"
+     hx-trigger="load">
+  <p class="text-muted">Loading...</p>
+</div>
+
+<script>
+// Update room dropdown when building changes
+document.getElementById('filter-building').addEventListener('change', function() {
+  fetch("{% url 'events:schedule_rooms' event.slug %}?building=" + encodeURIComponent(this.value))
+    .then(r => r.text())
+    .then(html => { document.getElementById('filter-room').innerHTML = html; });
+});
+
+// Print button
+document.getElementById('print-btn').addEventListener('click', function(e) {
+  e.preventDefault();
+  const params = new URLSearchParams();
+  const b = document.getElementById('filter-building').value;
+  const r = document.getElementById('filter-room').value;
+  const d = document.getElementById('filter-day').value;
+  const a = document.getElementById('filter-av').value;
+  const s = document.getElementById('filter-search').value;
+  if (b) params.set('building', b);
+  if (r) params.set('room_number', r);
+  if (d) params.set('day', d);
+  if (a) params.set('av', a);
+  if (s) params.set('search', s);
+  window.open("{% url 'events:schedule_print' event.slug %}?" + params.toString(), '_blank');
+});
+
+// Mobile day tabs
+document.querySelectorAll('.day-tab').forEach(function(tab) {
+  tab.addEventListener('click', function() {
+    document.querySelectorAll('.day-tab').forEach(t => t.classList.remove('active'));
+    this.classList.add('active');
+    document.getElementById('filter-day').value = this.dataset.day;
+    htmx.trigger(document.getElementById('filter-day'), 'change');
+  });
+});
+</script>
+{% endblock %}

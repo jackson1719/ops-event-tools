@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}Manage — {{ event.name }}{% endblock %}
+
+{% block content %}
+<h2 class="mb-4">Manage {{ event.name }}</h2>
+
+<div class="row g-4">
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-body">
+        <h5 class="card-title">Google Sheets Sync</h5>
+        {% if event.sheets_enabled %}
+          <p>
+            <strong>Last sync:</strong>
+            {{ event.last_sync_at|date:"m/d/Y g:i A"|default:"Never" }}
+          </p>
+          <p>
+            <strong>Status:</strong>
+            {% if event.last_sync_status == 'success' %}
+              <span class="badge bg-success">Success</span>
+            {% elif event.last_sync_status == 'error' %}
+              <span class="badge bg-danger">Error</span>
+            {% elif event.last_sync_status == 'running' %}
+              <span class="badge bg-warning text-dark">Running</span>
+            {% else %}
+              <span class="badge bg-secondary">Never run</span>
+            {% endif %}
+          </p>
+          {% if event.last_sync_error %}
+            <details class="mb-3">
+              <summary class="text-warning">Sync warnings / errors</summary>
+              <pre class="text-danger mt-2" style="font-size:0.75rem;white-space:pre-wrap;">{{ event.last_sync_error }}</pre>
+            </details>
+          {% endif %}
+          <form method="POST" action="{% url 'events:manage_sync' event.slug %}">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-primary">Sync Now</button>
+          </form>
+        {% else %}
+          <p class="text-muted">
+            No spreadsheet configured. Data is managed directly in the
+            <a href="{% url 'admin:index' %}">Django admin</a>, or add a
+            spreadsheet ID on the event to enable sync.
+          </p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-body">
+        <h5 class="card-title">Manage</h5>
+        <div class="d-grid gap-2">
+          <a href="{% url 'events:manage_links' event.slug %}" class="btn btn-outline-light">Edit Links</a>
+          <a href="{% url 'events:manage_room_images' event.slug %}" class="btn btn-outline-light">Room Layout Images</a>
+          {% if user.is_staff or user.is_superuser %}
+            <a href="{% url 'admin:index' %}" class="btn btn-outline-light">Django Admin (data entry)</a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

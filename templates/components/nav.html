@@ -1,0 +1,86 @@
+{% load events_extras %}
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark border-bottom border-secondary">
+  <div class="container-fluid">
+    <a class="navbar-brand" href="{% url 'events:picker' %}">Ops Event Tools</a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarNav">
+      {% if current_event %}
+      <ul class="navbar-nav">
+        <li class="nav-item">
+          <a class="nav-link {% if '/live' in request.path %}active{% endif %}"
+             href="{% url 'events:live' current_event.slug %}">Live Events</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link {% if '/schedule' in request.path %}active{% endif %}"
+             href="{% url 'events:schedule' current_event.slug %}">Full Schedule</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link {% if '/rooms' in request.path %}active{% endif %}"
+             href="{% url 'events:rooms' current_event.slug %}">Rooms</a>
+        </li>
+        {% if user|role_at_least:"Staff" %}
+        <li class="nav-item">
+          <a class="nav-link {% if '/staff' in request.path %}active{% endif %}"
+             href="{% url 'events:staff' current_event.slug %}">Staff</a>
+        </li>
+        {% endif %}
+        <li class="nav-item">
+          <a class="nav-link {% if '/links' in request.path %}active{% endif %}"
+             href="{% url 'events:links' current_event.slug %}">Links</a>
+        </li>
+        {% if user|role_at_least:"Manager" %}
+        <li class="nav-item">
+          <a class="nav-link {% if '/manage' in request.path %}active{% endif %}"
+             href="{% url 'events:manage' current_event.slug %}">Manage</a>
+        </li>
+        {% endif %}
+      </ul>
+      {% endif %}
+      <ul class="navbar-nav ms-auto align-items-lg-center">
+        {% if current_event %}
+        <li class="nav-item me-2">
+          <span class="nav-link"
+                title="Last sync: {{ current_event.last_sync_at|date:'m/d/Y g:i A'|default:'Never' }}">
+            {% if not current_event.sheets_enabled %}
+              <span style="color:#888;">&#9679;</span> No Sheet
+            {% elif current_event.last_sync_status == 'success' %}
+              <span style="color:#22c55e;">&#9679;</span> Synced
+            {% elif current_event.last_sync_status == 'error' %}
+              <span style="color:#ef4444;">&#9679;</span> Sync Error
+            {% elif current_event.last_sync_status == 'running' %}
+              <span style="color:#eab308;">&#9679;</span> Syncing
+            {% else %}
+              <span style="color:#888;">&#9679;</span> No Sync
+            {% endif %}
+          </span>
+        </li>
+        {% endif %}
+        {% if nav_events|length > 1 or not current_event %}
+        <li class="nav-item dropdown me-2">
+          <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+            {{ current_event.name|default:"Select Event" }}
+          </a>
+          <ul class="dropdown-menu dropdown-menu-end">
+            {% for e in nav_events %}
+              <li><a class="dropdown-item" href="{% url 'events:live' e.slug %}">{{ e.name }}</a></li>
+            {% endfor %}
+          </ul>
+        </li>
+        {% endif %}
+        {% if user.is_authenticated %}
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">{{ user.get_username }}</a>
+          <ul class="dropdown-menu dropdown-menu-end">
+            {% if user.is_staff or user.is_superuser %}
+              <li><a class="dropdown-item" href="{% url 'admin:index' %}">Django Admin</a></li>
+            {% endif %}
+            <li><a class="dropdown-item" href="{% url 'accounts:logout' %}">Log Out</a></li>
+          </ul>
+        </li>
+        {% endif %}
+      </ul>
+    </div>
+  </div>
+</nav>

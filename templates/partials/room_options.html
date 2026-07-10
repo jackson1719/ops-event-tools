@@ -1,0 +1,4 @@
+<option value="">All Rooms</option>
+{% for r in rooms %}
+  <option value="{{ r.room_number }}" {% if r.room_number == selected_room_number %}selected{% endif %}>{{ r.label }}</option>
+{% endfor %}

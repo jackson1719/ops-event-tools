@@ -1,0 +1,48 @@
+{% load events_extras %}<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Staff Roster — {{ event.name }}</title>
+  <style>
+    body { font-family: Arial, sans-serif; font-size: 11px; color: #000; margin: 20px; }
+    h1 { font-size: 18px; margin-bottom: 4px; }
+    .meta { font-size: 10px; color: #666; margin-bottom: 12px; }
+    h2 { font-size: 14px; margin: 16px 0 6px; border-bottom: 1px solid #999; padding-bottom: 2px; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 12px; }
+    th { text-align: left; background: #eee; padding: 3px 6px; font-size: 10px; border: 1px solid #ccc; }
+    td { padding: 3px 6px; border: 1px solid #ccc; vertical-align: top; }
+    @media print {
+      body { margin: 0; }
+      @page { margin: 0.5in; }
+    }
+  </style>
+</head>
+<body>
+  <h1>{{ event.name }} — Staff Roster</h1>
+  <div class="meta">{{ total }} shift{{ total|pluralize }} | Printed {% now "m/d/Y g:i A" %}</div>
+
+  {% for day, shifts in days_grouped.items %}
+    <h2>{{ day|format_day }}</h2>
+    <table>
+      <thead>
+        <tr>
+          <th style="width:25%;">Staff</th>
+          <th style="width:20%;">Time</th>
+          <th>Notes</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for shift in shifts %}
+        <tr>
+          <td>{{ shift.staff_name }}</td>
+          <td>{{ shift.starts_at|date:"g:i A" }} - {{ shift.ends_at|date:"g:i A" }}</td>
+          <td>{{ shift.notes }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% endfor %}
+
+  <script>window.print();</script>
+</body>
+</html>

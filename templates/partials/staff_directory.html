@@ -1,0 +1,30 @@
+{% if selected_staff %}
+  <h5>{{ selected_staff }}</h5>
+  {% if shifts %}
+    <div class="table-responsive">
+      <table class="table table-striped">
+        <thead>
+          <tr>
+            <th>Day</th>
+            <th>Time</th>
+            <th>Notes</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for shift in shifts %}
+          <tr>
+            <td class="text-nowrap">{{ shift.starts_at|date:"l (n/j)" }}</td>
+            <td class="text-nowrap">{{ shift.starts_at|date:"g:i A" }} - {{ shift.ends_at|date:"g:i A" }}</td>
+            <td>{{ shift.notes }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <p class="text-muted">{{ shifts|length }} shift{{ shifts|length|pluralize }}</p>
+  {% else %}
+    <p class="text-muted">No shifts found for {{ selected_staff }}.</p>
+  {% endif %}
+{% else %}
+  <p class="text-muted">Select a staff member to view their schedule.</p>
+{% endif %}

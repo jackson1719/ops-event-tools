@@ -1,0 +1,407 @@
+{% extends "base.html" %}
+{% block title %}Live Events — {{ event.name }}{% endblock %}
+
+{% block head %}
+<style>
+  .live-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 20px;
+    background: #1a1a2e;
+    border-bottom: 2px solid #333;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .live-header h1 {
+    font-size: 1.4rem;
+    margin: 0;
+  }
+  .live-clock {
+    font-size: 1.6rem;
+    font-weight: bold;
+    font-variant-numeric: tabular-nums;
+  }
+  .live-container {
+    position: relative;
+    height: calc(100vh - 120px);
+    overflow: hidden;
+  }
+  .guide-grid {
+    display: grid;
+    height: 100%;
+    grid-template-columns: var(--room-col-width, 200px) 1fr;
+    grid-template-rows: 40px 1fr;
+  }
+  .time-header-corner {
+    background: #1a1a2e;
+    border-bottom: 1px solid #444;
+    border-right: 1px solid #444;
+    z-index: 2;
+  }
+  .time-header {
+    display: flex;
+    background: #1a1a2e;
+    border-bottom: 1px solid #444;
+    position: relative;
+    overflow: hidden;
+  }
+  .time-label {
+    flex-shrink: 0;
+    text-align: center;
+    font-size: 0.85rem;
+    color: #aaa;
+    border-left: 1px solid #333;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .room-labels {
+    overflow-y: auto;
+    background: #1a1a2e;
+    border-right: 1px solid #444;
+  }
+  .room-label {
+    display: flex;
+    align-items: center;
+    padding: 0 12px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    border-bottom: 1px solid #333;
+    white-space: normal;
+    word-wrap: break-word;
+    line-height: 1.2;
+    overflow: hidden;
+  }
+  .room-col-resize {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 5px;
+    height: 100%;
+    cursor: col-resize;
+    z-index: 5;
+    background: transparent;
+  }
+  .room-col-resize:hover {
+    background: rgba(255,255,255,0.2);
+  }
+  .events-area {
+    position: relative;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+  .event-row {
+    position: relative;
+    border-bottom: 1px solid #333;
+  }
+  .event-block {
+    position: absolute;
+    top: 3px;
+    bottom: 3px;
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-size: 0.75rem;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    cursor: default;
+    border: 1px solid rgba(255,255,255,0.15);
+    display: flex;
+    align-items: center;
+  }
+  .event-block .event-time {
+    font-weight: 600;
+    margin-right: 6px;
+    flex-shrink: 0;
+  }
+  .now-line {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: #ff4444;
+    z-index: 10;
+    pointer-events: none;
+  }
+  .now-line::before {
+    content: 'NOW';
+    position: absolute;
+    top: -18px;
+    left: -14px;
+    font-size: 0.65rem;
+    color: #ff4444;
+    font-weight: bold;
+  }
+  .half-hour-line {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 1px;
+    background: #333;
+    z-index: 1;
+    pointer-events: none;
+  }
+
+  /* Mobile styles */
+  @media (max-width: 767.98px) {
+    .live-header { padding: 8px 12px; }
+    .live-header h1 { font-size: 1.1rem; }
+    .live-clock { font-size: 1.2rem; }
+    .mobile-event-card {
+      border-left: 4px solid;
+      padding: 8px 12px;
+      margin-bottom: 6px;
+      border-radius: 4px;
+      background: #2a2a3e;
+    }
+    .mobile-event-card .event-title {
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+    .mobile-event-card .event-meta {
+      font-size: 0.8rem;
+      color: #aaa;
+    }
+    .mobile-room-header {
+      font-size: 0.85rem;
+      font-weight: 700;
+      padding: 6px 0;
+      margin-top: 12px;
+      border-bottom: 1px solid #444;
+      color: #ccc;
+    }
+    .mobile-now-badge {
+      display: inline-block;
+      background: #ff4444;
+      color: #fff;
+      font-size: 0.65rem;
+      padding: 1px 6px;
+      border-radius: 3px;
+      font-weight: 700;
+      margin-left: 6px;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Desktop header -->
+<div class="live-header d-none d-md-flex">
+  <h1>
+    Live Events
+    <select id="building-filter" class="form-select form-select-sm d-inline-block ms-2" style="width: auto;">
+      <option value="" {% if not selected_building %}selected{% endif %}>All Buildings</option>
+      {% for b in buildings %}
+        <option value="{{ b }}" {% if b == selected_building %}selected{% endif %}>{{ b }}</option>
+      {% endfor %}
+    </select>
+    <select id="av-filter" class="form-select form-select-sm d-inline-block ms-2" style="width: auto;">
+      <option value="yes" {% if selected_av == 'yes' %}selected{% endif %}>AV Only</option>
+      <option value="" {% if selected_av == '' %}selected{% endif %}>All Events</option>
+      <option value="no" {% if selected_av == 'no' %}selected{% endif %}>No AV</option>
+    </select>
+    <div class="dropdown d-inline-block ms-2">
+      <button class="btn btn-outline-light btn-sm dropdown-toggle" type="button" id="room-filter-btn" data-bs-toggle="dropdown" data-bs-auto-close="outside">
+        Rooms: All
+      </button>
+      <div class="dropdown-menu p-2" id="room-filter-menu" style="max-height:300px;overflow-y:auto;min-width:450px;white-space:nowrap;">
+        <div class="form-check mb-1">
+          <input class="form-check-input room-check" type="checkbox" id="room-all" checked>
+          <label class="form-check-label" for="room-all"><strong>All Rooms</strong></label>
+        </div>
+        <hr class="my-1">
+        <div id="room-checkboxes"></div>
+      </div>
+    </div>
+  </h1>
+  <div class="d-flex align-items-center gap-2">
+    <select id="date-filter" class="form-select form-select-sm" style="width: auto;">
+      <option value="">Today</option>
+      {% for d in days %}
+        <option value="{{ d.value }}" {% if d.value == selected_date %}selected{% endif %}>{{ d.label }}</option>
+      {% endfor %}
+    </select>
+    <input type="time" id="time-filter" class="form-control form-control-sm" style="width: auto;"
+           value="{{ selected_time }}" placeholder="Now">
+    <button id="clear-test" class="btn btn-outline-secondary btn-sm" title="Reset to live">Reset</button>
+    <div class="live-clock ms-3" id="clock"></div>
+  </div>
+</div>
+
+<!-- Mobile header -->
+<div class="d-md-none p-2" style="background:#1a1a2e;border-bottom:2px solid #333;">
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <strong>Live Events</strong>
+    <div class="live-clock" id="clock-mobile" style="font-size:1rem;"></div>
+  </div>
+  <div class="d-flex gap-2 flex-wrap">
+    <select id="building-filter-mobile" class="form-select form-select-sm" style="width:auto;flex:1;">
+      <option value="" {% if not selected_building %}selected{% endif %}>All Buildings</option>
+      {% for b in buildings %}
+        <option value="{{ b }}" {% if b == selected_building %}selected{% endif %}>{{ b }}</option>
+      {% endfor %}
+    </select>
+    <select id="av-filter-mobile" class="form-select form-select-sm" style="width:auto;">
+      <option value="yes" {% if selected_av == 'yes' %}selected{% endif %}>AV Only</option>
+      <option value="" {% if selected_av == '' %}selected{% endif %}>All</option>
+      <option value="no" {% if selected_av == 'no' %}selected{% endif %}>No AV</option>
+    </select>
+    <select id="date-filter-mobile" class="form-select form-select-sm" style="width:auto;">
+      <option value="">Today</option>
+      {% for d in days %}
+        <option value="{{ d.value }}" {% if d.value == selected_date %}selected{% endif %}>{{ d.label|slice:":3" }}</option>
+      {% endfor %}
+    </select>
+  </div>
+</div>
+
+<!-- Desktop grid view -->
+<div class="live-container d-none d-md-block" id="live-container">
+  <div class="guide-grid" id="guide-grid">
+    <div class="time-header-corner" style="position:relative;">
+      <div class="room-col-resize" id="room-col-resize"></div>
+    </div>
+    <div class="time-header" id="time-header"></div>
+    <div class="room-labels" id="room-labels"></div>
+    <div class="events-area" id="events-area"></div>
+  </div>
+</div>
+
+<!-- Mobile card list view -->
+<div class="d-md-none p-2" id="mobile-live-list" style="overflow-y:auto;height:calc(100vh - 160px);"></div>
+{% endblock %}
+
+{% block scripts %}
+{{ events_data|json_script:"events-data" }}
+<script>
+  const EVENTS = JSON.parse(document.getElementById('events-data').textContent);
+  const TEST_NOW_MINUTES = {{ test_now_minutes|default_if_none:"null" }};
+  const LIVE_URL = "{% url 'events:live' event.slug %}";
+</script>
+{% load static %}
+<script src="{% static 'js/live.js' %}"></script>
+<script>
+(function() {
+  // Desktop resize handle
+  const handle = document.getElementById('room-col-resize');
+  const grid = document.getElementById('guide-grid');
+  let dragging = false;
+  handle.addEventListener('mousedown', function(e) {
+    dragging = true;
+    e.preventDefault();
+  });
+  document.addEventListener('mousemove', function(e) {
+    if (!dragging) return;
+    const gridRect = grid.getBoundingClientRect();
+    const w = Math.max(120, Math.min(400, e.clientX - gridRect.left));
+    grid.style.setProperty('--room-col-width', w + 'px');
+  });
+  document.addEventListener('mouseup', function() { dragging = false; });
+
+  // --- Mobile card list ---
+  const COLORS = ['#2563eb','#7c3aed','#0d7377','#b45309','#9f1239','#0891b2','#4f46e5','#4a6741','#c2410c','#7e22ce'];
+  function getColor(str) {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash);
+    return COLORS[Math.abs(hash) % COLORS.length];
+  }
+  function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+  function nowMin() {
+    if (TEST_NOW_MINUTES !== null) return TEST_NOW_MINUTES;
+    const d = new Date();
+    return d.getHours() * 60 + d.getMinutes();
+  }
+  function fmtTime(m) {
+    const h = Math.floor(m/60) % 24, mins = m%60;
+    const ap = h >= 12 ? 'PM' : 'AM';
+    const h12 = h===0?12:h>12?h-12:h;
+    return h12+':'+String(mins).padStart(2,'0')+' '+ap;
+  }
+
+  function renderMobileList() {
+    const container = document.getElementById('mobile-live-list');
+    if (!container) return;
+
+    const now = nowMin();
+    const windowStart = now - 30;
+    const windowEnd = now + 240;
+
+    const visible = EVENTS.filter(e => e.end_min > windowStart && e.start_min < windowEnd);
+
+    if (visible.length === 0) {
+      container.innerHTML = '<p class="text-muted p-3">No events in the current time window.</p>';
+      return;
+    }
+
+    // Group by room
+    const rooms = {};
+    for (const e of visible) {
+      const key = e.room_name + ' ' + e.room_number;
+      if (!rooms[key]) rooms[key] = { name: e.room_name, number: e.room_number, events: [] };
+      rooms[key].events.push(e);
+    }
+
+    const sorted = Object.values(rooms).sort((a,b) => (a.name+a.number).localeCompare(b.name+b.number));
+
+    let html = '';
+    for (const room of sorted) {
+      const label = room.number ? esc(room.name) + ' (' + esc(room.number) + ')' : esc(room.name);
+      const color = getColor(room.name + ' ' + room.number);
+      html += '<div class="mobile-room-header">' + label + '</div>';
+
+      room.events.sort((a,b) => a.start_min - b.start_min);
+      for (const e of room.events) {
+        const isNow = e.start_min <= now && e.end_min > now;
+        const nowBadge = isNow ? '<span class="mobile-now-badge">NOW</span>' : '';
+        const cardColor = e.event_name.toUpperCase() === 'STRIKE' ? '#b91c1c' : color;
+        html += '<div class="mobile-event-card" style="border-left-color:' + cardColor + ';">';
+        html += '<div class="event-title">' + esc(e.event_name) + nowBadge + '</div>';
+        html += '<div class="event-meta">' + esc(e.start_time) + ' - ' + esc(e.end_time) + '</div>';
+        if (e.description) html += '<div class="event-meta">' + esc(e.description) + '</div>';
+        html += '</div>';
+      }
+    }
+
+    container.innerHTML = html;
+  }
+
+  function updateMobileClock() {
+    const el = document.getElementById('clock-mobile');
+    if (!el) return;
+    if (TEST_NOW_MINUTES !== null) {
+      el.textContent = 'TEST: ' + fmtTime(TEST_NOW_MINUTES);
+      return;
+    }
+    const d = new Date();
+    const h = d.getHours(), m = d.getMinutes(), s = d.getSeconds();
+    const ap = h >= 12 ? 'PM' : 'AM';
+    const h12 = h===0?12:h>12?h-12:h;
+    el.textContent = h12+':'+String(m).padStart(2,'0')+':'+String(s).padStart(2,'0')+' '+ap;
+  }
+
+  // Mobile filter controls — navigate on change
+  function buildMobileUrl() {
+    const b = document.getElementById('building-filter-mobile').value;
+    const a = document.getElementById('av-filter-mobile').value;
+    const d = document.getElementById('date-filter-mobile').value;
+    let url = LIVE_URL + '?building=' + encodeURIComponent(b) + '&av=' + encodeURIComponent(a);
+    if (d) url += '&date=' + encodeURIComponent(d);
+    return url;
+  }
+  ['building-filter-mobile', 'av-filter-mobile', 'date-filter-mobile'].forEach(function(id) {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('change', function() { window.location.href = buildMobileUrl(); });
+  });
+
+  // Initial mobile render
+  renderMobileList();
+  updateMobileClock();
+
+  if (TEST_NOW_MINUTES === null) {
+    setInterval(updateMobileClock, 1000);
+    setInterval(renderMobileList, 60000);
+  }
+})();
+</script>
+{% endblock %}

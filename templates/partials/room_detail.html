@@ -1,0 +1,124 @@
+<h3>{{ room.name }}</h3>
+<p class="text-muted">
+  {{ room.building }}
+  {% if room.floor %} &middot; Floor {{ room.floor }}{% endif %}
+  {% if room.room_number %} &middot; Room {{ room.room_number }}{% endif %}
+</p>
+
+{% if room.layout_image %}
+  <div class="mb-4">
+    <img src="{{ room.layout_image.url }}"
+         alt="Layout for {{ room.name }}"
+         class="img-fluid rounded border border-secondary room-layout-img"
+         style="max-height: 400px; cursor: pointer;"
+         title="Click to fullscreen"
+         onclick="document.getElementById('layout-overlay').style.display='flex'">
+  </div>
+  <div id="layout-overlay" onclick="this.style.display='none'"
+       style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;z-index:2000;background:rgba(0,0,0,0.95);cursor:pointer;align-items:center;justify-content:center;">
+    <img src="{{ room.layout_image.url }}"
+         alt="Layout for {{ room.name }}"
+         style="max-width:95vw;max-height:95vh;object-fit:contain;">
+  </div>
+{% endif %}
+
+{% if equipment_by_type %}
+  <h5>Equipment</h5>
+  {% for type_name, equip_items in equipment_by_type.items %}
+    <h6 class="text-muted mt-2">{{ type_name }}</h6>
+    <ul class="list-group list-group-flush mb-2">
+      {% for item in equip_items %}
+        <li class="list-group-item bg-transparent">
+          {{ item.quantity }}x {{ item.item_name }}
+          {% if item.vendor %}<span class="text-muted">({{ item.vendor }})</span>{% endif %}
+        </li>
+      {% endfor %}
+    </ul>
+  {% endfor %}
+{% else %}
+  <p class="text-muted">No equipment listed for this room.</p>
+{% endif %}
+
+{% if items %}
+  <div class="d-flex justify-content-between align-items-center mt-4">
+    <h5 class="mb-0">
+      <a class="text-decoration-none text-white d-md-none" data-bs-toggle="collapse" href="#room-schedule-collapse" role="button">
+        Schedule <small class="text-muted">({{ items|length }})</small> &#9662;
+      </a>
+      <span class="d-none d-md-inline">Schedule</span>
+    </h5>
+    <a href="{% url 'events:schedule' event.slug %}?building={{ room.building|urlencode }}&room_number={{ room.room_number|urlencode }}"
+       class="btn btn-outline-light btn-sm">View Full Schedule</a>
+  </div>
+  <div class="d-md-block collapse" id="room-schedule-collapse">
+    <div class="table-responsive">
+      <table class="table table-sm table-striped">
+        <thead>
+          <tr>
+            <th>Day</th>
+            <th>Time</th>
+            <th>Event</th>
+            <th>AV</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in items %}
+          <tr>
+            <td class="text-nowrap">{{ item.starts_at|date:"l (n/j)" }}</td>
+            <td class="text-nowrap">{{ item.starts_at|date:"g:i A" }} - {{ item.ends_at|date:"g:i A" }}</td>
+            <td>{{ item.title }}</td>
+            <td>
+              {% if item.has_av %}
+                <span class="badge bg-success">Yes</span>
+              {% else %}
+                <span class="badge bg-secondary">No</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% else %}
+  <p class="text-muted mt-4">No events scheduled for this room.</p>
+{% endif %}
+
+{% if checklist %}
+  <h5 class="mt-4">Setup Checklist</h5>
+  <div class="list-group list-group-flush mb-3">
+    {% for item in checklist %}
+      <label class="list-group-item bg-transparent d-flex align-items-center gap-2" style="cursor:pointer;">
+        <input type="checkbox" class="form-check-input checklist-toggle"
+               data-url="{% url 'events:checklist_toggle' event.slug item.pk %}"
+               {% if item.checked %}checked{% endif %}
+               {% if not can_check %}disabled{% endif %}>
+        <span class="{% if item.checked %}text-decoration-line-through text-muted{% endif %}">{{ item.item }}</span>
+        {% if item.checked and item.checked_by %}
+          <small class="text-muted ms-auto">{{ item.checked_by }}</small>
+        {% endif %}
+      </label>
+    {% endfor %}
+  </div>
+  <script>
+  document.querySelectorAll('.checklist-toggle').forEach(function(cb) {
+    cb.addEventListener('change', function() {
+      const checked = this.checked ? '1' : '0';
+      fetch(this.dataset.url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: 'checked=' + checked
+      });
+      const span = this.nextElementSibling;
+      if (this.checked) {
+        span.classList.add('text-decoration-line-through', 'text-muted');
+      } else {
+        span.classList.remove('text-decoration-line-through', 'text-muted');
+      }
+    });
+  });
+  </script>
+{% endif %}

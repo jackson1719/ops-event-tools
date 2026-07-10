@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% load events_extras %}
+{% block title %}Links — {{ event.name }}{% endblock %}
+
+{% block content %}
+<h2 class="mb-3">Useful Links</h2>
+
+{% if categories %}
+  {% for cat_name, link_list in categories.items %}
+    <h5 class="mt-4">{{ cat_name }}</h5>
+    <div class="list-group mb-3">
+      {% for link in link_list %}
+        <a href="{{ link.url }}" target="_blank" rel="noopener noreferrer"
+           class="list-group-item list-group-item-action">
+          <div class="d-flex justify-content-between align-items-center">
+            <strong>{{ link.title }}</strong>
+            <small class="text-muted">{{ link.url|truncatechars:50 }}</small>
+          </div>
+          {% if link.description %}
+            <small class="text-muted">{{ link.description }}</small>
+          {% endif %}
+        </a>
+      {% endfor %}
+    </div>
+  {% endfor %}
+{% else %}
+  <p class="text-muted">
+    No links configured yet.
+    {% if user|role_at_least:"Manager" %}
+      Add links in <a href="{% url 'events:manage_links' event.slug %}">Manage</a>.
+    {% endif %}
+  </p>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,162 @@
+{% extends "base.html" %}
+{% block title %}Staff Shifts — {{ event.name }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h2>Staff Shifts</h2>
+  <a href="#" id="print-btn" target="_blank" class="btn btn-outline-light btn-sm">Print Roster</a>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-md-3">
+    <label class="form-label">View</label>
+    <select id="view-select" class="form-select">
+      <option value="table" {% if selected_view == 'table' %}selected{% endif %}>Table</option>
+      <option value="on-shift" {% if selected_view == 'on-shift' %}selected{% endif %}>On Shift Now</option>
+      <option value="timeline" {% if selected_view == 'timeline' %}selected{% endif %}>Daily Timeline</option>
+      <option value="heatmap" {% if selected_view == 'heatmap' %}selected{% endif %}>Coverage Heatmap</option>
+      <option value="directory" {% if selected_view == 'directory' %}selected{% endif %}>Staff Directory</option>
+    </select>
+  </div>
+
+  <!-- Table filters -->
+  <div id="table-filters" class="col-md-9" style="display:none;">
+    <div class="row g-3">
+      <div class="col-md-4">
+        <label class="form-label">Staff Member</label>
+        <select id="filter-staff" class="form-select">
+          <option value="">All Staff</option>
+          {% for name in staff_names %}
+            <option value="{{ name }}">{{ name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Day</label>
+        <select id="filter-day" class="form-select">
+          <option value="">All Days</option>
+          {% for d in days %}
+            <option value="{{ d.value }}">{{ d.label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- Day filter for timeline/heatmap/on-shift -->
+  <div id="day-filter-group" class="col-md-3" style="display:none;">
+    <label class="form-label">Day</label>
+    <select id="filter-day-single" class="form-select">
+      {% for d in days %}
+        <option value="{{ d.value }}">{{ d.label }}</option>
+      {% endfor %}
+    </select>
+  </div>
+
+  <!-- Time filter for on-shift -->
+  <div id="time-filter-group" class="col-md-3" style="display:none;">
+    <label class="form-label">Test Time</label>
+    <input type="time" id="filter-time" class="form-control">
+  </div>
+
+  <!-- Staff selector for directory -->
+  <div id="directory-filter-group" class="col-md-3" style="display:none;">
+    <label class="form-label">Staff Member</label>
+    <select id="filter-directory-staff" class="form-select">
+      <option value="">Select staff...</option>
+      {% for name in staff_names %}
+        <option value="{{ name }}">{{ name }}</option>
+      {% endfor %}
+    </select>
+  </div>
+</div>
+
+<div id="staff-results">
+  <p class="text-muted">Loading...</p>
+</div>
+
+<script>
+(function() {
+  const viewSelect = document.getElementById('view-select');
+  const tableFilters = document.getElementById('table-filters');
+  const dayFilterGroup = document.getElementById('day-filter-group');
+  const timeFilterGroup = document.getElementById('time-filter-group');
+  const directoryGroup = document.getElementById('directory-filter-group');
+  const results = document.getElementById('staff-results');
+
+  const URLS = {
+    table: "{% url 'events:staff_table' event.slug %}",
+    onShift: "{% url 'events:staff_on_shift' event.slug %}",
+    timeline: "{% url 'events:staff_timeline' event.slug %}",
+    heatmap: "{% url 'events:staff_heatmap' event.slug %}",
+    directory: "{% url 'events:staff_directory' event.slug %}",
+    print: "{% url 'events:staff_print' event.slug %}"
+  };
+
+  function showFilters(view) {
+    tableFilters.style.display = 'none';
+    dayFilterGroup.style.display = 'none';
+    timeFilterGroup.style.display = 'none';
+    directoryGroup.style.display = 'none';
+
+    if (view === 'table') tableFilters.style.display = '';
+    if (view === 'on-shift') { dayFilterGroup.style.display = ''; timeFilterGroup.style.display = ''; }
+    if (view === 'timeline' || view === 'heatmap') dayFilterGroup.style.display = '';
+    if (view === 'directory') directoryGroup.style.display = '';
+  }
+
+  function loadView(view) {
+    let url;
+    const day = document.getElementById('filter-day-single').value;
+
+    if (view === 'table') {
+      const staff = document.getElementById('filter-staff').value;
+      const tday = document.getElementById('filter-day').value;
+      url = URLS.table + '?staff=' + encodeURIComponent(staff) + '&day=' + encodeURIComponent(tday);
+    } else if (view === 'on-shift') {
+      const time = document.getElementById('filter-time').value;
+      url = URLS.onShift + '?day=' + encodeURIComponent(day) + '&time=' + encodeURIComponent(time);
+    } else if (view === 'timeline') {
+      url = URLS.timeline + '?day=' + encodeURIComponent(day);
+    } else if (view === 'heatmap') {
+      url = URLS.heatmap + '?day=' + encodeURIComponent(day);
+    } else if (view === 'directory') {
+      const staff = document.getElementById('filter-directory-staff').value;
+      url = URLS.directory + '?staff=' + encodeURIComponent(staff);
+    }
+
+    fetch(url).then(r => r.text()).then(html => {
+      results.innerHTML = html;
+      results.querySelectorAll('script').forEach(old => {
+        const s = document.createElement('script');
+        s.textContent = old.textContent;
+        old.replaceWith(s);
+      });
+    });
+  }
+
+  viewSelect.addEventListener('change', function() {
+    showFilters(this.value);
+    loadView(this.value);
+  });
+
+  ['filter-staff', 'filter-day'].forEach(id => {
+    document.getElementById(id).addEventListener('change', () => loadView('table'));
+  });
+  document.getElementById('filter-day-single').addEventListener('change', () => loadView(viewSelect.value));
+  document.getElementById('filter-time').addEventListener('change', () => loadView('on-shift'));
+  document.getElementById('filter-directory-staff').addEventListener('change', () => loadView('directory'));
+
+  document.getElementById('print-btn').addEventListener('click', function(e) {
+    e.preventDefault();
+    const day = document.getElementById('filter-day-single').value || document.getElementById('filter-day').value;
+    let url = URLS.print;
+    if (day) url += '?day=' + encodeURIComponent(day);
+    window.open(url, '_blank');
+  });
+
+  showFilters(viewSelect.value);
+  loadView(viewSelect.value);
+})();
+</script>
+{% endblock %}

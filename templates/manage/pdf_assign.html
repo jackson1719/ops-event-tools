@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Assign PDF Pages — {{ event.name }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h2>Assign PDF Pages to Rooms</h2>
+  <a href="{% url 'events:manage_room_images' event.slug %}" class="btn btn-outline-secondary btn-sm">Cancel</a>
+</div>
+
+<p class="text-muted">Select which room each page belongs to. Leave blank to skip a page.</p>
+
+<form method="POST" action="{% url 'events:manage_pdf_save' event.slug batch_id %}">
+  {% csrf_token %}
+  <div class="row g-3">
+    {% for page in pages %}
+    <div class="col-lg-4 col-md-6">
+      <div class="card">
+        <img src="/media/pdf_temp/{{ batch_id }}/{{ page }}"
+             class="card-img-top" alt="Page {{ forloop.counter }}"
+             style="height:250px;object-fit:contain;background:#1a1a2e;padding:4px;">
+        <div class="card-body py-2 px-3">
+          <div class="d-flex align-items-center gap-2">
+            <strong>Page {{ forloop.counter }}</strong>
+            <select name="{{ page|slice:":-4" }}" class="form-select form-select-sm">
+              <option value="">— Skip —</option>
+              {% regroup rooms by building as building_groups %}
+              {% for group in building_groups %}
+                <optgroup label="{{ group.grouper }}">
+                  {% for room in group.list %}
+                    <option value="{{ room.pk }}">{{ room.room_number }} — {{ room.name }}</option>
+                  {% endfor %}
+                </optgroup>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <div class="mt-4 mb-4">
+    <button type="submit" class="btn btn-primary">Save Assignments</button>
+    <a href="{% url 'events:manage_room_images' event.slug %}" class="btn btn-outline-secondary ms-2">Cancel</a>
+  </div>
+</form>
+{% endblock %}

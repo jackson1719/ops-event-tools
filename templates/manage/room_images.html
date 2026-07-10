@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+{% block title %}Room Images — {{ event.name }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h2>Room Layout Images</h2>
+  <a href="{% url 'events:manage' event.slug %}" class="btn btn-outline-secondary btn-sm">Back to Manage</a>
+</div>
+
+<!-- PDF Upload -->
+<div class="card mb-4">
+  <div class="card-body">
+    <h5 class="card-title">Upload from PDF</h5>
+    <p class="text-muted" style="font-size:0.85rem;">
+      Upload a PDF with one room layout per page. You'll assign each page to a room on the next screen.
+    </p>
+    <form method="POST" action="{% url 'events:manage_room_images_pdf' event.slug %}" enctype="multipart/form-data" class="d-flex gap-2 align-items-end">
+      {% csrf_token %}
+      <input type="file" name="pdf" accept=".pdf" class="form-control" style="max-width:400px;">
+      <button type="submit" class="btn btn-primary">Upload PDF</button>
+    </form>
+  </div>
+</div>
+
+<!-- Bulk upload with drag and drop -->
+<div class="card mb-4">
+  <div class="card-body">
+    <h5 class="card-title">Bulk Upload Images</h5>
+    <p class="text-muted" style="font-size:0.85rem;">
+      Name files as <code>&lt;building&gt;_&lt;room_number&gt;.jpg</code> to auto-match rooms.
+      Example: <code>summit_340_342.jpg</code>, <code>arch_6c.png</code>
+    </p>
+    <form method="POST" action="{% url 'events:manage_room_images_bulk' event.slug %}" enctype="multipart/form-data" id="bulk-form">
+      {% csrf_token %}
+      <div id="drop-zone" style="border:2px dashed #555;border-radius:8px;padding:40px;text-align:center;cursor:pointer;transition:border-color 0.2s;">
+        <p class="mb-2">Drag and drop image files here, or click to browse</p>
+        <input type="file" name="images" multiple accept=".jpg,.jpeg,.png,.gif,.webp" id="bulk-input" style="display:none;">
+        <div id="drop-file-list" class="text-muted" style="font-size:0.85rem;"></div>
+      </div>
+      <button type="submit" class="btn btn-primary mt-3" id="bulk-submit" style="display:none;">Upload Files</button>
+    </form>
+  </div>
+</div>
+
+<!-- Expected filenames reference -->
+<div class="card mb-4">
+  <div class="card-body">
+    <h5 class="card-title">
+      <a data-bs-toggle="collapse" href="#filename-ref" class="text-decoration-none text-white">
+        Expected Filenames Reference &#9662;
+      </a>
+    </h5>
+    <div class="collapse" id="filename-ref">
+      <div class="row" style="font-size:0.8rem;">
+        {% regroup rooms by building as building_groups %}
+        {% for group in building_groups %}
+          <div class="col-12 mt-2"><strong>{{ group.grouper }}</strong></div>
+          {% for room in group.list %}
+            <div class="col-md-4 col-6">
+              <code>{{ room.upload_slug }}.jpg</code>
+              <span class="text-muted">— {{ room.room_number }}</span>
+            </div>
+          {% endfor %}
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Per-room list with previews -->
+<h5 class="mb-3">Individual Room Upload</h5>
+<div class="row g-3">
+  {% for room in rooms %}
+  <div class="col-md-4 col-sm-6">
+    <div class="card h-100">
+      {% if room.layout_image %}
+        <img src="{{ room.layout_image.url }}" class="card-img-top" alt="{{ room.name }}"
+             style="height:150px;object-fit:cover;">
+      {% else %}
+        <div class="card-img-top d-flex align-items-center justify-content-center text-muted"
+             style="height:150px;background:#2a2a3e;">
+          No image
+        </div>
+      {% endif %}
+      <div class="card-body py-2 px-3">
+        <h6 class="card-title mb-1">{{ room.room_number }} — {{ room.name }}</h6>
+        <small class="text-muted">{{ room.building }}</small>
+        <form method="POST" action="{% url 'events:manage_room_image_upload' event.slug room.pk %}"
+              enctype="multipart/form-data" class="mt-2">
+          {% csrf_token %}
+          <div class="d-flex gap-2">
+            <input type="file" class="form-control form-control-sm" name="image" accept=".jpg,.jpeg,.png,.gif,.webp">
+            <button type="submit" class="btn btn-sm btn-outline-primary">Upload</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<script>
+(function() {
+  const zone = document.getElementById('drop-zone');
+  const input = document.getElementById('bulk-input');
+  const fileList = document.getElementById('drop-file-list');
+  const submitBtn = document.getElementById('bulk-submit');
+
+  zone.addEventListener('click', () => input.click());
+
+  zone.addEventListener('dragover', function(e) {
+    e.preventDefault();
+    zone.style.borderColor = '#0d6efd';
+  });
+  zone.addEventListener('dragleave', function() {
+    zone.style.borderColor = '#555';
+  });
+  zone.addEventListener('drop', function(e) {
+    e.preventDefault();
+    zone.style.borderColor = '#555';
+    input.files = e.dataTransfer.files;
+    showFiles(input.files);
+  });
+  input.addEventListener('change', function() {
+    showFiles(this.files);
+  });
+
+  function showFiles(files) {
+    if (files.length === 0) {
+      fileList.textContent = '';
+      submitBtn.style.display = 'none';
+      return;
+    }
+    const names = Array.from(files).map(f => f.name);
+    fileList.textContent = names.length + ' file' + (names.length !== 1 ? 's' : '') + ' selected: ' + names.join(', ');
+    submitBtn.style.display = '';
+  }
+})();
+</script>
+{% endblock %}

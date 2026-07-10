@@ -1,0 +1,22 @@
+{% if shifts %}
+<div class="alert alert-info mb-3">
+  <strong>{{ shifts|length }} staff on shift</strong> as of {{ now|date:"g:i A" }} on {{ now|date:"l n/j" }}
+</div>
+<div class="row g-3">
+  {% for shift in shifts %}
+  <div class="col-md-4">
+    <div class="card">
+      <div class="card-body py-2 px-3">
+        <h6 class="card-title mb-1">{{ shift.staff_name }}</h6>
+        <small class="text-muted">{{ shift.starts_at|date:"g:i A" }} - {{ shift.ends_at|date:"g:i A" }}</small>
+        {% if shift.notes %}
+          <br><small>{{ shift.notes }}</small>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<p class="text-muted">No staff currently on shift.</p>
+{% endif %}

@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Edit Links — {{ event.name }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h2>Edit Links</h2>
+  <a href="{% url 'events:manage' event.slug %}" class="btn btn-outline-secondary btn-sm">Back to Manage</a>
+</div>
+
+<form method="POST" id="links-form">
+  {% csrf_token %}
+  <div id="links-container">
+    {% for link in links %}
+    <div class="card mb-2 link-row">
+      <div class="card-body">
+        <div class="row g-2">
+          <div class="col-md-3">
+            <input type="text" class="form-control" name="title" placeholder="Title" value="{{ link.title }}">
+          </div>
+          <div class="col-md-4">
+            <input type="url" class="form-control" name="url" placeholder="https://..." value="{{ link.url }}">
+          </div>
+          <div class="col-md-2">
+            <input type="text" class="form-control" name="category" placeholder="Category" value="{{ link.category }}">
+          </div>
+          <div class="col-md-2">
+            <input type="text" class="form-control" name="description" placeholder="Description" value="{{ link.description }}">
+          </div>
+          <div class="col-md-1">
+            <button type="button" class="btn btn-outline-danger btn-sm w-100" onclick="this.closest('.link-row').remove()">X</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <button type="button" class="btn btn-outline-light mb-3" id="add-link">+ Add Link</button>
+  <br>
+  <button type="submit" class="btn btn-primary">Save Links</button>
+</form>
+
+<script>
+document.getElementById('add-link').addEventListener('click', function() {
+  const html = `
+    <div class="card mb-2 link-row">
+      <div class="card-body">
+        <div class="row g-2">
+          <div class="col-md-3"><input type="text" class="form-control" name="title" placeholder="Title"></div>
+          <div class="col-md-4"><input type="url" class="form-control" name="url" placeholder="https://..."></div>
+          <div class="col-md-2"><input type="text" class="form-control" name="category" placeholder="Category"></div>
+          <div class="col-md-2"><input type="text" class="form-control" name="description" placeholder="Description"></div>
+          <div class="col-md-1"><button type="button" class="btn btn-outline-danger btn-sm w-100" onclick="this.closest('.link-row').remove()">X</button></div>
+        </div>
+      </div>
+    </div>`;
+  document.getElementById('links-container').insertAdjacentHTML('beforeend', html);
+});
+</script>
+{% endblock %}

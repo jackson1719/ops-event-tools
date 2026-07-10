@@ -1,0 +1,60 @@
+{% load events_extras %}<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Schedule — {{ event.name }}</title>
+  <style>
+    body { font-family: Arial, sans-serif; font-size: 11px; color: #000; margin: 20px; }
+    h1 { font-size: 18px; margin-bottom: 4px; }
+    .filters { font-size: 10px; color: #666; margin-bottom: 12px; }
+    h2 { font-size: 14px; margin: 16px 0 6px; border-bottom: 1px solid #999; padding-bottom: 2px; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 12px; }
+    th { text-align: left; background: #eee; padding: 3px 6px; font-size: 10px; border: 1px solid #ccc; }
+    td { padding: 3px 6px; border: 1px solid #ccc; vertical-align: top; }
+    .av-yes { font-weight: bold; }
+    .desc { font-size: 9px; color: #555; }
+    @media print {
+      body { margin: 0; }
+      @page { margin: 0.5in; size: landscape; }
+    }
+  </style>
+</head>
+<body>
+  <h1>{{ event.name }} — AV Schedule</h1>
+  {% if filters %}
+    <div class="filters">{{ filters|join:" | " }}</div>
+  {% endif %}
+  <div class="filters">{{ total }} event{{ total|pluralize }} | Printed {% now "m/d/Y g:i A" %}</div>
+
+  {% for day, items in days_grouped.items %}
+    <h2>{{ day|format_day }}</h2>
+    <table>
+      <thead>
+        <tr>
+          <th style="width:12%;">Time</th>
+          <th style="width:12%;">Building</th>
+          <th style="width:15%;">Room</th>
+          <th>Event</th>
+          <th style="width:5%;">AV</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in items %}
+        <tr>
+          <td>{{ item.starts_at|date:"g:i A" }} - {{ item.ends_at|date:"g:i A" }}</td>
+          <td>{{ item.building }}</td>
+          <td>{{ item.room_label }}</td>
+          <td>
+            {{ item.title }}
+            {% if item.description %}<br><span class="desc">{{ item.description }}</span>{% endif %}
+          </td>
+          <td class="{% if item.has_av %}av-yes{% endif %}">{% if item.has_av %}Yes{% else %}No{% endif %}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% endfor %}
+
+  <script>window.print();</script>
+</body>
+</html>

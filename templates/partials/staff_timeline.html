@@ -1,0 +1,76 @@
+<div id="timeline-container" style="overflow-x:auto;"></div>
+
+{{ shifts_data|json_script:"timeline-data" }}
+<script>
+(function() {
+  const SHIFTS = JSON.parse(document.getElementById('timeline-data').textContent);
+  const ROW_HEIGHT = 40;
+  const SLOT_WIDTH = 100;
+
+  function esc(str) {
+    const d = document.createElement('div');
+    d.textContent = str;
+    return d.innerHTML;
+  }
+
+  const COLORS = ['#2563eb','#7c3aed','#0d7377','#b45309','#9f1239','#0891b2','#4f46e5','#4a6741','#c2410c','#7e22ce'];
+  function getColor(i) { return COLORS[i % COLORS.length]; }
+
+  function formatTime(m) {
+    const h = Math.floor(m / 60) % 24;
+    const mins = m % 60;
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
+    return h12 + ':' + String(mins).padStart(2, '0') + ' ' + ampm;
+  }
+
+  if (SHIFTS.length === 0) {
+    document.getElementById('timeline-container').innerHTML = '<p class="text-muted">No shifts for this day.</p>';
+    return;
+  }
+
+  const staffNames = [...new Set(SHIFTS.map(s => s.staff_name))].sort();
+
+  const minTime = Math.floor(Math.min(...SHIFTS.map(s => s.start_min)) / 60) * 60;
+  const maxTime = Math.ceil(Math.max(...SHIFTS.map(s => s.end_min)) / 60) * 60;
+  const totalMin = maxTime - minTime;
+  const numSlots = totalMin / 30;
+  const totalWidth = numSlots * SLOT_WIDTH;
+  const pxPerMin = SLOT_WIDTH / 30;
+  const labelWidth = 160;
+
+  let html = '<div style="display:grid;grid-template-columns:' + labelWidth + 'px 1fr;grid-template-rows:30px repeat(' + staffNames.length + ',' + ROW_HEIGHT + 'px);">';
+
+  html += '<div style="background:#1a1a2e;border-bottom:1px solid #444;border-right:1px solid #444;"></div>';
+
+  html += '<div style="display:flex;background:#1a1a2e;border-bottom:1px solid #444;overflow:hidden;">';
+  for (let i = 0; i < numSlots; i++) {
+    const t = minTime + i * 30;
+    html += '<div style="flex-shrink:0;width:' + SLOT_WIDTH + 'px;text-align:center;font-size:0.8rem;color:#aaa;border-left:1px solid #333;display:flex;align-items:center;justify-content:center;">' + formatTime(t) + '</div>';
+  }
+  html += '</div>';
+
+  staffNames.forEach((name, idx) => {
+    html += '<div style="display:flex;align-items:center;padding:0 8px;font-size:0.8rem;font-weight:600;border-bottom:1px solid #333;border-right:1px solid #444;background:#1a1a2e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + esc(name) + '</div>';
+    html += '<div style="position:relative;height:' + ROW_HEIGHT + 'px;width:' + totalWidth + 'px;border-bottom:1px solid #333;">';
+
+    for (let i = 0; i < numSlots; i++) {
+      html += '<div style="position:absolute;top:0;bottom:0;left:' + (i * SLOT_WIDTH) + 'px;width:1px;background:#333;"></div>';
+    }
+
+    const myShifts = SHIFTS.filter(s => s.staff_name === name);
+    myShifts.forEach(s => {
+      const left = (s.start_min - minTime) * pxPerMin;
+      const width = (s.end_min - s.start_min) * pxPerMin;
+      const color = getColor(idx);
+      const tip = esc(s.start_time) + ' - ' + esc(s.end_time) + (s.notes ? '\n' + esc(s.notes) : '');
+      html += '<div style="position:absolute;top:4px;bottom:4px;left:' + left + 'px;width:' + width + 'px;background:' + color + ';border-radius:4px;padding:0 6px;font-size:0.7rem;color:#fff;display:flex;align-items:center;overflow:hidden;white-space:nowrap;border:1px solid rgba(255,255,255,0.15);" title="' + tip + '">' + esc(s.start_time) + ' - ' + esc(s.end_time) + (s.notes ? ' — ' + esc(s.notes) : '') + '</div>';
+    });
+
+    html += '</div>';
+  });
+
+  html += '</div>';
+  document.getElementById('timeline-container').innerHTML = html;
+})();
+</script>

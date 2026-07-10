@@ -1,0 +1,53 @@
+/* Fullscreen mode for Live Events TV display */
+.fullscreen-body {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  height: 100vh;
+}
+
+/* Make table rows more readable */
+.table-striped > tbody > tr:nth-of-type(odd) > * {
+  --bs-table-bg-type: rgba(255, 255, 255, 0.02);
+}
+
+/* Room list sidebar */
+.list-group-item.active {
+  background-color: var(--bs-primary);
+  border-color: var(--bs-primary);
+}
+
+/* Links page */
+.list-group-item-action:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+/* Settings cards */
+.card {
+  border-color: #444;
+}
+
+/* Live events area scrollbar styling */
+.events-area::-webkit-scrollbar,
+.room-labels::-webkit-scrollbar {
+  width: 6px;
+}
+.events-area::-webkit-scrollbar-track,
+.room-labels::-webkit-scrollbar-track {
+  background: #1a1a2e;
+}
+.events-area::-webkit-scrollbar-thumb,
+.room-labels::-webkit-scrollbar-thumb {
+  background: #444;
+  border-radius: 3px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .guide-grid {
+    grid-template-columns: 120px 1fr !important;
+  }
+  .room-label {
+    font-size: 0.75rem !important;
+  }
+}

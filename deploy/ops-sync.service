@@ -1,0 +1,12 @@
+[Unit]
+Description=Ops Event Tools — Google Sheets sync (oneshot)
+After=network.target
+
+[Service]
+Type=oneshot
+User=jthomas
+Group=jthomas
+WorkingDirectory=/opt/ops-event-tools
+EnvironmentFile=/opt/ops-event-tools/.env
+ExecStart=/opt/ops-event-tools/venv/bin/python manage.py sync_events --all
+ExecStartPost=/opt/ops-event-tools/venv/bin/python manage.py clearsessions
