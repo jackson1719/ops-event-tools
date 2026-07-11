@@ -5,3 +5,4 @@ gspread>=6,<7
 google-auth>=2.23,<3
 pdf2image>=1.16,<2
 Pillow>=10.0
+django-allauth[socialaccount]>=65.18,<66

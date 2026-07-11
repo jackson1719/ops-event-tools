@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load socialaccount %}
 {% block title %}Login — Ops Event Tools{% endblock %}
 
 {% block content %}
@@ -26,6 +27,22 @@
           </div>
           <button type="submit" class="btn btn-primary w-100">Log In</button>
         </form>
+
+        <div class="d-flex align-items-center my-3">
+          <hr class="flex-grow-1"><span class="px-2 text-muted small">or</span><hr class="flex-grow-1">
+        </div>
+
+        <form method="POST" action="{% provider_login_url 'google' %}">
+          {% csrf_token %}
+          <input type="hidden" name="next" value="{{ next }}">
+          <button type="submit" class="btn btn-outline-light w-100 mb-2">
+            <svg width="16" height="16" viewBox="0 0 48 48" class="me-1" aria-hidden="true"><path fill="#4285F4" d="M45.1 24.5c0-1.6-.1-3.1-.4-4.5H24v8.5h11.8c-.5 2.8-2.1 5.1-4.4 6.7v5.5h7.1c4.2-3.8 6.6-9.5 6.6-16.2z"/><path fill="#34A853" d="M24 46c6 0 11-2 14.6-5.3l-7.1-5.5c-2 1.3-4.5 2.1-7.5 2.1-5.8 0-10.7-3.9-12.4-9.1H4.2v5.7C7.8 41.1 15.3 46 24 46z"/><path fill="#FBBC05" d="M11.6 28.2c-.5-1.3-.7-2.7-.7-4.2s.3-2.9.7-4.2v-5.7H4.2C2.7 17.1 1.9 20.4 1.9 24s.8 6.9 2.3 9.9l7.4-5.7z"/><path fill="#EA4335" d="M24 10.7c3.3 0 6.2 1.1 8.5 3.3l6.3-6.3C35 4.3 30 2 24 2 15.3 2 7.8 6.9 4.2 14.1l7.4 5.7c1.7-5.2 6.6-9.1 12.4-9.1z"/></svg>
+            Sign in with Google
+          </button>
+        </form>
+
+        <a href="{% url 'account_request_login_code' %}{% if next %}?next={{ next|urlencode }}{% endif %}"
+           class="btn btn-outline-light w-100">Email me a sign-in code</a>
       </div>
     </div>
   </div>

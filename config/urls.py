@@ -12,7 +12,10 @@ service_worker = login_not_required(
 
 urlpatterns = [
     path("admin/", admin.site.urls),
+    # Our accounts routes first: login/logout/theme/users shadow allauth's
+    # equivalents; allauth supplies Google OAuth + email-code flows.
     path("accounts/", include("accounts.urls")),
+    path("accounts/", include("allauth.urls")),
     path("media/<path:path>", serve_media, name="media"),
     path("sw.js", service_worker, name="service_worker"),
     path("", include("events.urls")),
