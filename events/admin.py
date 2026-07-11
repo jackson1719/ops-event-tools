@@ -64,8 +64,9 @@ class RoomAdmin(admin.ModelAdmin):
 
 @admin.register(ScheduleItem)
 class ScheduleItemAdmin(admin.ModelAdmin):
-    list_display = ["title", "building", "room_name", "room_number", "starts_at", "ends_at", "has_av", "event"]
-    list_filter = ["event", "building", "has_av"]
+    list_display = ["title", "building", "room_name", "room_number", "starts_at", "ends_at", "has_av", "is_cancelled", "event"]
+    list_editable = ["is_cancelled"]
+    list_filter = ["event", "building", "has_av", "is_cancelled"]
     search_fields = ["title", "description"]
     date_hierarchy = "starts_at"
 
