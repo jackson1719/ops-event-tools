@@ -227,6 +227,7 @@
            value="{{ selected_time }}" placeholder="Now">
     <button id="clear-test" class="btn btn-outline-secondary btn-sm" title="Reset to live">Reset</button>
     <div class="live-clock ms-3" id="clock"></div>
+    <small class="text-muted align-self-end mb-1">{{ tz_abbrev }}</small>
   </div>
 </div>
 
@@ -234,7 +235,10 @@
 <div class="d-md-none p-2" style="background:var(--live-surface);border-bottom:2px solid var(--live-line);color:var(--live-text);">
   <div class="d-flex justify-content-between align-items-center mb-2">
     <strong>Live Events</strong>
-    <div class="live-clock" id="clock-mobile" style="font-size:1rem;"></div>
+    <div>
+      <span class="live-clock" id="clock-mobile" style="font-size:1rem;"></span>
+      <small class="text-muted">{{ tz_abbrev }}</small>
+    </div>
   </div>
   <div class="d-flex gap-2 flex-wrap">
     <select id="building-filter-mobile" class="form-select form-select-sm" style="width:auto;flex:1;">

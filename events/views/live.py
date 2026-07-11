@@ -1,11 +1,11 @@
-from datetime import date
+from datetime import date, time
 
 from django.shortcuts import render
 
 from accounts.roles import VIEWER, require_role
 from ..selectors import fmt_time, schedule_buildings, schedule_days, day_bounds
 from ..shortcuts import get_event_or_404
-from ..timeutil import event_today, minutes_since_midnight, parse_sheet_time
+from ..timeutil import combine_aware, event_today, minutes_since_midnight, parse_sheet_time
 
 
 @require_role(VIEWER)
@@ -63,10 +63,14 @@ def live_page(request, slug):
         for item in qs
     ]
 
+    # Timezone abbreviation for the displayed date (PST vs PDT depends on DST)
+    tz_abbrev = combine_aware(display_date, time(12, 0), tz).strftime("%Z")
+
     return render(request, "live.html", {
         "event": event,
         "events_data": events_data,
         "test_now_minutes": test_now_minutes,
+        "tz_abbrev": tz_abbrev,
         "buildings": buildings,
         "days": days,
         "selected_building": building,
