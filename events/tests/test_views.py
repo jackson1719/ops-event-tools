@@ -60,3 +60,20 @@ class ViewSmokeTests(TestCase):
     def test_picker_redirects_single_event(self):
         resp = self.client.get("/")
         self.assertRedirects(resp, f"/e/{self.event.slug}/live")
+
+    def test_service_worker_served_without_login(self):
+        resp = self.client_class().get("/sw.js")
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp["Content-Type"], "application/javascript")
+        self.assertContains(resp, "CACHE_VERSION")
+
+    def test_analytics_renders_for_manager(self):
+        from django.contrib.auth.models import Group
+        from accounts.models import User
+        manager = User.objects.create_user("mgr", password="pw")
+        manager.groups.add(Group.objects.get(name="Manager"))
+        self.client.login(username="mgr", password="pw")
+        resp = self.client.get(f"/e/{self.event.slug}/analytics")
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, "AV panel-hours by room")
+        self.assertContains(resp, "heat-cell")

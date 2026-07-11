@@ -1,6 +1,6 @@
 from django.urls import path
 
-from .views import links, live, manage, picker, rooms, schedule, staff
+from .views import analytics, links, live, manage, picker, rooms, schedule, staff
 
 app_name = "events"
 
@@ -32,8 +32,11 @@ urlpatterns = [
 
     path("e/<slug:slug>/links", links.links_page, name="links"),
 
+    path("e/<slug:slug>/analytics", analytics.analytics, name="analytics"),
+
     path("e/<slug:slug>/manage/", manage.dashboard, name="manage"),
     path("e/<slug:slug>/manage/sync", manage.trigger_sync, name="manage_sync"),
+    path("e/<slug:slug>/manage/backup", manage.trigger_backup, name="manage_backup"),
     path("e/<slug:slug>/manage/links", manage.edit_links, name="manage_links"),
     path("e/<slug:slug>/manage/room-images", manage.room_images, name="manage_room_images"),
     path("e/<slug:slug>/manage/room-images/<int:room_id>", manage.upload_room_image, name="manage_room_image_upload"),

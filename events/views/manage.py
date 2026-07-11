@@ -29,12 +29,33 @@ def _room_slug(room: Room) -> str:
 
 @require_role(MANAGER)
 def dashboard(request, slug):
+    from django.conf import settings as dj_settings
+    from sync.backups import last_backup_time
+
     event = get_event_or_404(slug)
     recent_activity = event.audit_logs.select_related("user")[:20]
     return render(request, "manage/dashboard.html", {
         "event": event,
         "recent_activity": recent_activity,
+        "backup_enabled": dj_settings.BACKUP_ENABLED,
+        "backup_interval": dj_settings.BACKUP_INTERVAL_HOURS,
+        "last_backup": last_backup_time(),
     })
+
+
+@require_role(MANAGER)
+@require_POST
+def trigger_backup(request, slug):
+    from sync.backups import perform_backup
+
+    event = get_event_or_404(slug)
+    try:
+        path = perform_backup()
+        audit(event, request.user, "backup", f"Manual backup: {os.path.basename(path)}")
+        messages.success(request, f"Backup written: {os.path.basename(path)}")
+    except Exception as exc:
+        messages.error(request, f"Backup failed: {exc}")
+    return redirect("events:manage", slug=slug)
 
 
 @require_role(MANAGER)

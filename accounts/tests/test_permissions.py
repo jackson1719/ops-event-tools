@@ -6,7 +6,7 @@ from events.models import Event
 
 VIEWER_PAGES = ["/live", "/schedule", "/rooms", "/links"]
 STAFF_PAGES = ["/staff", "/staff/on-shift"]
-MANAGER_PAGES = ["/manage/", "/manage/links", "/manage/room-images"]
+MANAGER_PAGES = ["/manage/", "/manage/links", "/manage/room-images", "/analytics"]
 
 
 class PermissionMatrixTests(TestCase):

@@ -1,11 +1,19 @@
 from django.contrib import admin
+from django.contrib.auth.decorators import login_not_required
 from django.urls import include, path
+from django.views.generic import TemplateView
 
 from events.views.media import serve_media
+
+# Served at the root so its scope covers the whole site
+service_worker = login_not_required(
+    TemplateView.as_view(template_name="sw.js", content_type="application/javascript")
+)
 
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("accounts/", include("accounts.urls")),
     path("media/<path:path>", serve_media, name="media"),
+    path("sw.js", service_worker, name="service_worker"),
     path("", include("events.urls")),
 ]

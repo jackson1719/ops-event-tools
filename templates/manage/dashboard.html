@@ -48,12 +48,31 @@
   </div>
 
   <div class="col-md-6">
+    <div class="card mb-4">
+      <div class="card-body">
+        <h5 class="card-title">Backups</h5>
+        <p class="mb-2">
+          <strong>Last backup:</strong>
+          {% if last_backup %}{{ last_backup|date:"m/d/Y g:i A" }}{% else %}Never{% endif %}
+          {% if backup_enabled %}
+            <br><small class="text-muted">Automatic every {{ backup_interval }}h into the backups/ folder.</small>
+          {% else %}
+            <br><small class="text-warning">Automatic backups disabled (BACKUP_ENABLED=false).</small>
+          {% endif %}
+        </p>
+        <form method="POST" action="{% url 'events:manage_backup' event.slug %}">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-outline-light btn-sm">Back Up Now</button>
+        </form>
+      </div>
+    </div>
     <div class="card">
       <div class="card-body">
         <h5 class="card-title">Manage</h5>
         <div class="d-grid gap-2">
           <a href="{% url 'events:manage_links' event.slug %}" class="btn btn-outline-light">Edit Links</a>
           <a href="{% url 'events:manage_room_images' event.slug %}" class="btn btn-outline-light">Room Layout Images</a>
+          <a href="{% url 'events:analytics' event.slug %}" class="btn btn-outline-light">Utilization Analytics</a>
           {% if user.is_staff or user.is_superuser %}
             <a href="{% url 'admin:index' %}" class="btn btn-outline-light">Django Admin (data entry)</a>
           {% endif %}

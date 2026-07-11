@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+{% block title %}Analytics — {{ event.name }}{% endblock %}
+
+{% block head %}
+<style>
+  /* Chart tokens — validated blue sequential ramp; per-theme steps.
+     Dark surfaces: low recedes dark, high pops light. Light: inverse. */
+  :root, .theme-dark, .theme-midnight {
+    --chart-accent: #3987e5;
+    --heat-1: #104281; --heat-2: #1c5cab; --heat-3: #2a78d6; --heat-4: #5598e7; --heat-5: #9ec5f4;
+    --chart-grid: rgba(255,255,255,0.08);
+    --chart-cell-empty: rgba(255,255,255,0.04);
+  }
+  .theme-light, .theme-sakura {
+    --chart-accent: #2a78d6;
+    --heat-1: #b7d3f6; --heat-2: #86b6ef; --heat-3: #3987e5; --heat-4: #1c5cab; --heat-5: #0d366b;
+    --chart-grid: rgba(0,0,0,0.08);
+    --chart-cell-empty: rgba(0,0,0,0.04);
+  }
+  .theme-light .heat-cell[data-level="1"], .theme-light .heat-cell[data-level="2"],
+  .theme-sakura .heat-cell[data-level="1"], .theme-sakura .heat-cell[data-level="2"] { color: var(--bs-body-color); }
+
+  .stat-tile { min-width: 150px; }
+  .stat-tile .value { font-size: 2rem; font-weight: 700; line-height: 1.1; }
+  .stat-tile .label { font-size: 0.8rem; color: var(--bs-secondary-color); }
+
+  .bar-row { display: grid; grid-template-columns: 240px 1fr 70px; gap: 8px; align-items: center; margin-bottom: 6px; }
+  .bar-label { font-size: 0.85rem; text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .bar-track { position: relative; height: 18px; }
+  .bar-fill {
+    height: 100%; background: var(--chart-accent);
+    border-radius: 0 4px 4px 0;   /* rounded data end, square baseline */
+    min-width: 2px;
+    transition: opacity 0.1s;
+  }
+  .bar-row:hover .bar-fill { outline: 2px solid var(--bs-body-color); outline-offset: 1px; }
+  .bar-value { font-size: 0.8rem; font-variant-numeric: tabular-nums; color: var(--bs-secondary-color); }
+
+  .heat-table { border-collapse: separate; border-spacing: 2px; }   /* 2px surface gap */
+  .heat-cell {
+    width: 26px; height: 26px; border-radius: 2px;
+    background: var(--chart-cell-empty);
+    font-size: 0.65rem; text-align: center; vertical-align: middle;
+    color: #fff; font-variant-numeric: tabular-nums;
+  }
+  .heat-cell[data-level="1"] { background: var(--heat-1); }
+  .heat-cell[data-level="2"] { background: var(--heat-2); }
+  .heat-cell[data-level="3"] { background: var(--heat-3); }
+  .heat-cell[data-level="4"] { background: var(--heat-4); }
+  .heat-cell[data-level="5"] { background: var(--heat-5); }
+  .heat-cell:hover { outline: 2px solid var(--bs-body-color); outline-offset: -1px; }
+  .heat-day { font-size: 0.8rem; white-space: nowrap; padding-right: 8px; text-align: right; }
+  .heat-hour { font-size: 0.7rem; color: var(--bs-secondary-color); text-align: left; }
+  .legend-swatch { display: inline-block; width: 16px; height: 16px; border-radius: 2px; vertical-align: middle; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h2>Analytics</h2>
+  <a href="{% url 'events:manage' event.slug %}" class="btn btn-outline-secondary btn-sm">Back to Manage</a>
+</div>
+
+<!-- KPI row -->
+<div class="d-flex gap-3 flex-wrap mb-4">
+  <div class="card stat-tile"><div class="card-body py-2 px-3">
+    <div class="value">{{ kpis.av_panels }}</div>
+    <div class="label">AV panels ({{ kpis.total_panels }} total)</div>
+  </div></div>
+  <div class="card stat-tile"><div class="card-body py-2 px-3">
+    <div class="value">{{ kpis.av_hours }}</div>
+    <div class="label">AV panel-hours</div>
+  </div></div>
+  <div class="card stat-tile"><div class="card-body py-2 px-3">
+    <div class="value">{{ kpis.av_rooms }}</div>
+    <div class="label">Rooms running AV</div>
+  </div></div>
+  <div class="card stat-tile"><div class="card-body py-2 px-3">
+    <div class="value">{{ kpis.busiest_count }}</div>
+    <div class="label">AV panels on {{ kpis.busiest_day }}</div>
+  </div></div>
+  <div class="card stat-tile"><div class="card-body py-2 px-3">
+    <div class="value">{{ kpis.cancelled }}</div>
+    <div class="label">Cancelled</div>
+  </div></div>
+</div>
+
+<!-- AV hours per room -->
+<div class="card mb-4">
+  <div class="card-body">
+    <h5 class="card-title mb-1">AV panel-hours by room</h5>
+    <p class="text-muted" style="font-size:0.8rem;">Top {{ top_rooms|length }} rooms{% if others_count %} ({{ others_count }} more not shown{% endif %}{% if others_count %}); cancelled panels excluded{% else %} — cancelled panels excluded{% endif %}</p>
+    {% for room in top_rooms %}
+      <div class="bar-row" title="{{ room.label }} — {{ room.hours }} hours across {{ room.count }} panels">
+        <div class="bar-label">{{ room.label }}</div>
+        <div class="bar-track"><div class="bar-fill" style="width:{{ room.pct }}%;"></div></div>
+        <div class="bar-value">{{ room.hours }}h · {{ room.count }}</div>
+      </div>
+    {% empty %}
+      <p class="text-muted">No AV panels.</p>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- AV load heatmap -->
+<div class="card mb-4">
+  <div class="card-body">
+    <h5 class="card-title mb-1">Concurrent AV panels by half hour</h5>
+    <p class="text-muted" style="font-size:0.8rem;">How many AV panels are running at once — peak staffing pressure. Empty cells = none scheduled.</p>
+    <div class="table-responsive">
+      <table class="heat-table">
+        <tbody>
+          {% for row in heat_rows %}
+          <tr>
+            <td class="heat-day">{{ row.label }}</td>
+            {% for cell in row.cells %}
+              <td class="heat-cell" data-level="{{ cell.level }}" title="{{ cell.tip }}">{% if cell.count %}{{ cell.count }}{% endif %}</td>
+            {% endfor %}
+          </tr>
+          {% endfor %}
+          <tr>
+            <td></td>
+            {% for label in hour_row %}
+              <td class="heat-hour" style="padding:0;">{{ label }}</td>
+            {% endfor %}
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="mt-2" style="font-size:0.75rem;">
+      <span class="text-muted me-1">Fewer</span>
+      <span class="legend-swatch" style="background:var(--heat-1);"></span>
+      <span class="legend-swatch" style="background:var(--heat-2);"></span>
+      <span class="legend-swatch" style="background:var(--heat-3);"></span>
+      <span class="legend-swatch" style="background:var(--heat-4);"></span>
+      <span class="legend-swatch" style="background:var(--heat-5);"></span>
+      <span class="text-muted ms-1">More (max {{ heat_max }})</span>
+    </div>
+  </div>
+</div>
+{% endblock %}

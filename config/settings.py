@@ -6,6 +6,7 @@ come from a .env file loaded by systemd (EnvironmentFile=) in production, or
 exported manually in development. See .env.example.
 """
 import os
+import sys
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -138,6 +139,12 @@ STORAGES = {
 MEDIA_URL = "media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
+# Keep test-created uploads (clone/backup tests) out of the real media dir
+if "test" in sys.argv:
+    import tempfile
+    MEDIA_ROOT = Path(tempfile.mkdtemp(prefix="ops-test-media-"))
+    BACKUP_DIR = Path(tempfile.mkdtemp(prefix="ops-test-backups-"))
+
 # Sized for the PDF room-layout upload flow
 DATA_UPLOAD_MAX_MEMORY_SIZE = 60 * 1024 * 1024
 FILE_UPLOAD_MAX_MEMORY_SIZE = 60 * 1024 * 1024
@@ -145,6 +152,13 @@ FILE_UPLOAD_MAX_MEMORY_SIZE = 60 * 1024 * 1024
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 GOOGLE_CREDENTIALS_FILE = os.getenv("GOOGLE_CREDENTIALS_FILE", str(BASE_DIR / "credentials.json"))
+
+# In-app scheduled backups (SQLite snapshot + media archive). The scheduler
+# thread starts with the web server; no external cron/systemd involved.
+BACKUP_ENABLED = os.getenv("BACKUP_ENABLED", "true").lower() in ("1", "true", "yes")
+BACKUP_DIR = Path(os.getenv("BACKUP_DIR", BASE_DIR / "backups"))
+BACKUP_INTERVAL_HOURS = int(os.getenv("BACKUP_INTERVAL_HOURS", "24"))
+BACKUP_KEEP = int(os.getenv("BACKUP_KEEP", "14"))
 
 LOGGING = {
     "version": 1,
