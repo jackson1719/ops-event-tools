@@ -1,10 +1,16 @@
 {% extends "base.html" %}
+{% load events_extras %}
 {% block title %}Events — Ops Event Tools{% endblock %}
 
 {% block content %}
 <div class="row justify-content-center mt-4">
   <div class="col-md-6">
-    <h2 class="mb-4">Select an Event</h2>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <h2 class="mb-0">Select an Event</h2>
+      {% if user|role_at_least:"Admin" %}
+        <a href="{% url 'events:event_create' %}" class="btn btn-primary btn-sm">+ New Event</a>
+      {% endif %}
+    </div>
     {% if events %}
       <div class="list-group">
         {% for event in events %}
@@ -17,7 +23,7 @@
         {% endfor %}
       </div>
     {% else %}
-      <p class="text-muted">No active events. {% if user.is_staff %}Create one in the <a href="{% url 'admin:index' %}">admin</a>.{% endif %}</p>
+      <p class="text-muted">No active events.{% if user|role_at_least:"Admin" %} <a href="{% url 'events:event_create' %}">Create one</a>.{% endif %}</p>
     {% endif %}
   </div>
 </div>

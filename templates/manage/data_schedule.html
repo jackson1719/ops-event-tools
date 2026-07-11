@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% load events_extras %}
+{% block title %}Schedule Data — {{ event.name }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h2>Schedule Items</h2>
+  <div>
+    <a href="{% url 'events:data_schedule_new' event.slug %}" class="btn btn-primary btn-sm">+ New Item</a>
+    <a href="{% url 'events:manage' event.slug %}" class="btn btn-outline-secondary btn-sm ms-2">Back to Manage</a>
+  </div>
+</div>
+{% include "manage/data_warning.html" %}
+
+<form method="GET" class="row g-2 mb-3">
+  <div class="col-auto">
+    <select name="building" class="form-select form-select-sm" onchange="this.form.submit()">
+      <option value="">All Buildings</option>
+      {% for b in buildings %}
+        <option value="{{ b }}" {% if b == selected_building %}selected{% endif %}>{{ b }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-auto">
+    <select name="day" class="form-select form-select-sm" onchange="this.form.submit()">
+      <option value="">All Days</option>
+      {% for d in days %}
+        <option value="{{ d.value }}" {% if d.value == selected_day %}selected{% endif %}>{{ d.label }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-auto">
+    <input type="text" name="search" class="form-control form-control-sm" placeholder="Search..." value="{{ selected_search }}">
+  </div>
+  <div class="col-auto">
+    <button type="submit" class="btn btn-outline-light btn-sm">Filter</button>
+  </div>
+</form>
+
+<div class="table-responsive">
+  <table class="table table-striped table-sm">
+    <thead>
+      <tr><th>When</th><th>Building</th><th>Room</th><th>Title</th><th>AV</th><th></th></tr>
+    </thead>
+    <tbody>
+      {% for item in page.object_list %}
+      <tr {% if item.is_cancelled %}class="opacity-50"{% endif %}>
+        <td class="text-nowrap">{{ item.starts_at|date:"D n/j g:i A" }} - {{ item.ends_at|date:"g:i A" }}</td>
+        <td>{{ item.building }}</td>
+        <td>{{ item.room_label }}</td>
+        <td>
+          {{ item.title }}
+          {% if item.is_cancelled %}<span class="badge bg-secondary">Cancelled</span>{% endif %}
+        </td>
+        <td>{% if item.has_av %}<span class="badge bg-success">AV</span>{% endif %}</td>
+        <td class="text-nowrap">
+          <a href="{% url 'events:data_schedule_edit' event.slug item.pk %}" class="btn btn-outline-light btn-sm">Edit</a>
+          <form method="POST" action="{% url 'events:data_schedule_delete' event.slug item.pk %}" class="d-inline"
+                onsubmit="return confirm('Delete {{ item.title|escapejs }}?');">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-outline-danger btn-sm">Delete</button>
+          </form>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="6" class="text-muted">No schedule items match.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% if page.has_other_pages %}
+<nav>
+  <ul class="pagination pagination-sm">
+    {% if page.has_previous %}
+      <li class="page-item"><a class="page-link" href="?page={{ page.previous_page_number }}&building={{ selected_building }}&day={{ selected_day }}&search={{ selected_search }}">&laquo;</a></li>
+    {% endif %}
+    <li class="page-item disabled"><span class="page-link">{{ page.number }} / {{ page.paginator.num_pages }}</span></li>
+    {% if page.has_next %}
+      <li class="page-item"><a class="page-link" href="?page={{ page.next_page_number }}&building={{ selected_building }}&day={{ selected_day }}&search={{ selected_search }}">&raquo;</a></li>
+    {% endif %}
+  </ul>
+</nav>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}{{ title }} — {{ event.name }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h2>{{ title }}</h2>
+  <a href="{% url back_url_name event.slug %}" class="btn btn-outline-secondary btn-sm">Back</a>
+</div>
+{% include "manage/data_warning.html" %}
+
+<div class="row">
+  <div class="col-md-6">
+    <form method="POST">
+      {% csrf_token %}
+      {% include "components/form_fields.html" %}
+      <button type="submit" class="btn btn-primary">Save</button>
+      <a href="{% url back_url_name event.slug %}" class="btn btn-outline-secondary ms-2">Cancel</a>
+    </form>
+  </div>
+</div>
+{% endblock %}

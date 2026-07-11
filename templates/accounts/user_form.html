@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}{% if target %}Edit {{ target.username }}{% else %}New User{% endif %}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-5">
+    <h2 class="mb-4">{% if target %}Edit User: {{ target.username }}{% else %}New User{% endif %}</h2>
+    <form method="POST">
+      {% csrf_token %}
+      {% include "components/form_fields.html" %}
+      <button type="submit" class="btn btn-primary">{% if target %}Save{% else %}Create User{% endif %}</button>
+      <a href="{% url 'accounts:user_list' %}" class="btn btn-outline-secondary ms-2">Cancel</a>
+    </form>
+    <div class="card mt-4">
+      <div class="card-body" style="font-size:0.85rem;">
+        <strong>Roles:</strong>
+        <ul class="mb-0 text-muted">
+          <li><strong>Viewer</strong> — live guide, schedule, rooms, links (kiosk/TV accounts)</li>
+          <li><strong>Staff</strong> — + staff schedules, checklists, room status</li>
+          <li><strong>Manager</strong> — + manage area, sync, images, data editing</li>
+          <li><strong>Admin</strong> — + users and event management</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

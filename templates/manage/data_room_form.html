@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block title %}{% if room %}{{ room }}{% else %}New Room{% endif %} — {{ event.name }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h2>{% if room %}Edit Room{% else %}New Room{% endif %}</h2>
+  <a href="{% url 'events:data_rooms' event.slug %}" class="btn btn-outline-secondary btn-sm">Back to Rooms</a>
+</div>
+{% include "manage/data_warning.html" %}
+
+<form method="POST">
+  {% csrf_token %}
+  <div class="row">
+    <div class="col-md-5">
+      <div class="card mb-4">
+        <div class="card-body">
+          <h5 class="card-title">Room</h5>
+          {% include "components/form_fields.html" %}
+        </div>
+      </div>
+    </div>
+
+    {% if equipment_formset %}
+    <div class="col-md-7">
+      <div class="card mb-4">
+        <div class="card-body">
+          <h5 class="card-title">Equipment</h5>
+          {{ equipment_formset.management_form }}
+          <div class="table-responsive">
+            <table class="table table-sm align-middle">
+              <thead><tr><th>Type</th><th style="width:80px;">Qty</th><th>Item</th><th>Vendor</th><th>Del</th></tr></thead>
+              <tbody>
+                {% for f in equipment_formset %}
+                <tr>
+                  {{ f.id }}
+                  <td>{{ f.equipment_type }}</td>
+                  <td>{{ f.quantity }}</td>
+                  <td>{{ f.item_name }}{% for e in f.item_name.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}</td>
+                  <td>{{ f.vendor }}</td>
+                  <td class="text-center">{% if f.instance.pk %}{{ f.DELETE }}{% endif %}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="card mb-4">
+        <div class="card-body">
+          <h5 class="card-title">Setup Checklist</h5>
+          {{ checklist_formset.management_form }}
+          <div class="table-responsive">
+            <table class="table table-sm align-middle">
+              <thead><tr><th style="width:90px;">Order</th><th>Item</th><th>Del</th></tr></thead>
+              <tbody>
+                {% for f in checklist_formset %}
+                <tr>
+                  {{ f.id }}
+                  <td>{{ f.position }}</td>
+                  <td>{{ f.item }}{% for e in f.item.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}</td>
+                  <td class="text-center">{% if f.instance.pk %}{{ f.DELETE }}{% endif %}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          <p class="text-muted mb-0" style="font-size:0.8rem;">Save to add another blank row.</p>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <button type="submit" class="btn btn-primary">Save</button>
+  <a href="{% url 'events:data_rooms' event.slug %}" class="btn btn-outline-secondary ms-2">Cancel</a>
+</form>
+{% endblock %}

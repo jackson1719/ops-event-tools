@@ -1,11 +1,12 @@
 from django.urls import path
 
-from .views import analytics, changes, links, live, manage, picker, rooms, schedule, staff
+from .views import analytics, changes, data, links, live, manage, picker, rooms, schedule, staff
 
 app_name = "events"
 
 urlpatterns = [
     path("", picker.event_picker, name="picker"),
+    path("events/new", manage.event_create, name="event_create"),
 
     path("e/<slug:slug>/live", live.live_page, name="live"),
 
@@ -38,6 +39,21 @@ urlpatterns = [
     path("e/<slug:slug>/manage/", manage.dashboard, name="manage"),
     path("e/<slug:slug>/manage/sync", manage.trigger_sync, name="manage_sync"),
     path("e/<slug:slug>/manage/backup", manage.trigger_backup, name="manage_backup"),
+    path("e/<slug:slug>/manage/settings", manage.event_settings, name="manage_settings"),
+    path("e/<slug:slug>/manage/audit", manage.audit_log, name="manage_audit"),
+
+    path("e/<slug:slug>/manage/data/rooms", data.rooms_list, name="data_rooms"),
+    path("e/<slug:slug>/manage/data/rooms/new", data.room_edit, name="data_room_new"),
+    path("e/<slug:slug>/manage/data/rooms/<int:room_id>", data.room_edit, name="data_room_edit"),
+    path("e/<slug:slug>/manage/data/rooms/<int:room_id>/delete", data.room_delete, name="data_room_delete"),
+    path("e/<slug:slug>/manage/data/schedule", data.schedule_list, name="data_schedule"),
+    path("e/<slug:slug>/manage/data/schedule/new", data.schedule_edit, name="data_schedule_new"),
+    path("e/<slug:slug>/manage/data/schedule/<int:item_id>", data.schedule_edit, name="data_schedule_edit"),
+    path("e/<slug:slug>/manage/data/schedule/<int:item_id>/delete", data.schedule_delete, name="data_schedule_delete"),
+    path("e/<slug:slug>/manage/data/shifts", data.shifts_list, name="data_shifts"),
+    path("e/<slug:slug>/manage/data/shifts/new", data.shift_edit, name="data_shift_new"),
+    path("e/<slug:slug>/manage/data/shifts/<int:shift_id>", data.shift_edit, name="data_shift_edit"),
+    path("e/<slug:slug>/manage/data/shifts/<int:shift_id>/delete", data.shift_delete, name="data_shift_delete"),
     path("e/<slug:slug>/manage/links", manage.edit_links, name="manage_links"),
     path("e/<slug:slug>/manage/room-images", manage.room_images, name="manage_room_images"),
     path("e/<slug:slug>/manage/room-images/<int:room_id>", manage.upload_room_image, name="manage_room_image_upload"),
