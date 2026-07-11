@@ -127,10 +127,40 @@
   --bs-btn-hover-color: #fff;
 }
 
-/* Dark, self-contained surfaces (live guide, mobile cards) always use light text
-   regardless of theme */
-.live-header, .mobile-event-card { color: #e8e8f0; }
+.live-header, .mobile-event-card { color: var(--live-text); }
 .theme-light main .text-white,
 .theme-sakura main .text-white { color: var(--bs-body-color) !important; }
-.theme-light .mobile-room-header,
-.theme-sakura .mobile-room-header { color: var(--bs-body-color); border-bottom-color: var(--bs-border-color); }
+
+/* Live guide surfaces — themeable via CSS variables (dark defaults) */
+:root {
+  --live-surface: #1a1a2e;
+  --live-line: #333;
+  --live-border: #444;
+  --live-muted: #aaa;
+  --live-text: #e8e8f0;
+  --live-card: #2a2a3e;
+}
+.theme-light {
+  --live-surface: #e9ecef;
+  --live-line: #dee2e6;
+  --live-border: #ced4da;
+  --live-muted: #6c757d;
+  --live-text: #212529;
+  --live-card: #ffffff;
+}
+.theme-sakura {
+  --live-surface: #f7e3ec;
+  --live-line: #ecc8d9;
+  --live-border: #ddb3c9;
+  --live-muted: #9b5c7c;
+  --live-text: #3d2231;
+  --live-card: #ffffff;
+}
+.theme-midnight {
+  --live-surface: #131632;
+  --live-line: #232852;
+  --live-border: #2e3563;
+  --live-muted: #8b93c4;
+  --live-text: #d7dcf5;
+  --live-card: #1a1e3d;
+}
