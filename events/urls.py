@@ -6,6 +6,7 @@ app_name = "events"
 
 urlpatterns = [
     path("", picker.event_picker, name="picker"),
+    path("events/new", manage.event_create, name="event_create"),
 
     path("e/<slug:slug>/live", live.live_page, name="live"),
 
@@ -38,6 +39,8 @@ urlpatterns = [
     path("e/<slug:slug>/manage/", manage.dashboard, name="manage"),
     path("e/<slug:slug>/manage/sync", manage.trigger_sync, name="manage_sync"),
     path("e/<slug:slug>/manage/backup", manage.trigger_backup, name="manage_backup"),
+    path("e/<slug:slug>/manage/settings", manage.event_settings, name="manage_settings"),
+    path("e/<slug:slug>/manage/audit", manage.audit_log, name="manage_audit"),
     path("e/<slug:slug>/manage/links", manage.edit_links, name="manage_links"),
     path("e/<slug:slug>/manage/room-images", manage.room_images, name="manage_room_images"),
     path("e/<slug:slug>/manage/room-images/<int:room_id>", manage.upload_room_image, name="manage_room_image_upload"),

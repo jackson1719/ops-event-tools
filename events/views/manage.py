@@ -10,9 +10,10 @@ from django.core.files.base import ContentFile
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
-from accounts.roles import MANAGER, require_role
+from accounts.roles import ADMIN, MANAGER, require_role
 from ..audit import audit
-from ..models import Link, Room
+from ..forms import EventCreateForm, EventSettingsForm
+from ..models import Event, Link, Room
 from ..shortcuts import get_event_or_404
 
 ALLOWED_IMAGE_EXTENSIONS = {"jpg", "jpeg", "png", "gif", "webp"}
@@ -40,6 +41,54 @@ def dashboard(request, slug):
         "backup_enabled": dj_settings.BACKUP_ENABLED,
         "backup_interval": dj_settings.BACKUP_INTERVAL_HOURS,
         "last_backup": last_backup_time(),
+    })
+
+
+@require_role(MANAGER)
+def event_settings(request, slug):
+    event = get_event_or_404(slug)
+    if request.method == "POST":
+        form = EventSettingsForm(request.POST, instance=event)
+        if form.is_valid():
+            form.save()
+            audit(event, request.user, "settings", "Event settings updated")
+            messages.success(request, "Event settings saved.")
+            return redirect("events:manage_settings", slug=event.slug)
+    else:
+        form = EventSettingsForm(instance=event)
+    return render(request, "manage/event_settings.html", {"event": event, "form": form})
+
+
+@require_role(ADMIN)
+def event_create(request):
+    if request.method == "POST":
+        form = EventCreateForm(request.POST)
+        if form.is_valid():
+            event = form.save()
+            audit(event, request.user, "settings", "Event created")
+            messages.success(request, f"Event '{event.name}' created.")
+            return redirect("events:manage_settings", slug=event.slug)
+    else:
+        form = EventCreateForm()
+    return render(request, "manage/event_create.html", {"form": form})
+
+
+@require_role(MANAGER)
+def audit_log(request, slug):
+    from django.core.paginator import Paginator
+
+    event = get_event_or_404(slug)
+    action = request.GET.get("action", "")
+    logs = event.audit_logs.select_related("user")
+    if action:
+        logs = logs.filter(action=action)
+    actions = event.audit_logs.values_list("action", flat=True).distinct().order_by("action")
+    page = Paginator(logs, 100).get_page(request.GET.get("page"))
+    return render(request, "manage/audit_log.html", {
+        "event": event,
+        "page": page,
+        "actions": actions,
+        "selected_action": action,
     })
 
 

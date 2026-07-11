@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}New Event{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-6">
+    <h2 class="mb-4">New Event</h2>
+    <form method="POST">
+      {% csrf_token %}
+      {% include "components/form_fields.html" %}
+      <button type="submit" class="btn btn-primary">Create Event</button>
+      <a href="{% url 'events:picker' %}" class="btn btn-outline-secondary ms-2">Cancel</a>
+    </form>
+    <p class="text-muted mt-3" style="font-size:0.85rem;">
+      Tip: to reuse last year's rooms, equipment, and checklists, use the clone
+      command instead: <code>manage.py clone_event &lt;old-slug&gt; &lt;new-slug&gt; --name "..."</code>
+    </p>
+  </div>
+</div>
+{% endblock %}
