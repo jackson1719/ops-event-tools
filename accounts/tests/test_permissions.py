@@ -61,6 +61,19 @@ class PermissionMatrixTests(TestCase):
         self.assertTrue(has_role(manager, "Manager"))
         self.assertFalse(has_role(manager, "Admin"))
 
+    def test_theme_selection_persists(self):
+        self.client.login(username="viewer", password="pw")
+        resp = self.client.post("/accounts/theme/", {"theme": "sakura", "next": self.url("/links")})
+        self.assertEqual(resp.status_code, 302)
+        user = User.objects.get(username="viewer")
+        self.assertEqual(user.theme, "sakura")
+        resp = self.client.get(self.url("/links"))
+        self.assertContains(resp, 'class="theme-sakura"')
+        # Invalid theme ignored
+        self.client.post("/accounts/theme/", {"theme": "neon-zebra"})
+        user.refresh_from_db()
+        self.assertEqual(user.theme, "sakura")
+
     def test_htmx_partial_gets_hx_redirect_when_logged_out(self):
         resp = self.client.get(self.url("/schedule/table"), HTTP_HX_REQUEST="true")
         self.assertEqual(resp.status_code, 401)

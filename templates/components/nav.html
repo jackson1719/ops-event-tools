@@ -77,6 +77,21 @@
         <li class="nav-item dropdown">
           <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">{{ user.get_username }}</a>
           <ul class="dropdown-menu dropdown-menu-end">
+            <li><h6 class="dropdown-header">Theme</h6></li>
+            {% for key, meta in themes.items %}
+              <li>
+                <form method="POST" action="{% url 'accounts:set_theme' %}" class="m-0">
+                  {% csrf_token %}
+                  <input type="hidden" name="theme" value="{{ key }}">
+                  <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                  <button type="submit" class="dropdown-item">
+                    {% if theme_name == key %}&check;{% else %}&nbsp;&nbsp;{% endif %}
+                    {{ meta.label }}
+                  </button>
+                </form>
+              </li>
+            {% endfor %}
+            <li><hr class="dropdown-divider"></li>
             {% if user.is_staff or user.is_superuser %}
               <li><a class="dropdown-item" href="{% url 'admin:index' %}">Django Admin</a></li>
             {% endif %}

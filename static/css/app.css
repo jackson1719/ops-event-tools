@@ -51,3 +51,86 @@
     font-size: 0.75rem !important;
   }
 }
+
+/* ===================== Themes ===================== */
+/* Themes set Bootstrap CSS variables at the root; the base color mode
+   (data-bs-theme) supplies component styling, these recolor it.
+   The Live Events grid keeps its own dark styling in every theme (TV display). */
+
+/* Midnight — deep navy (dark base) */
+.theme-midnight {
+  --bs-body-bg: #10132b;
+  --bs-body-color: #d7dcf5;
+  --bs-secondary-bg: #1a1e3d;
+  --bs-tertiary-bg: #161a35;
+  --bs-border-color: #2e3563;
+  --bs-dark-rgb: 19, 22, 50;
+}
+.theme-midnight .navbar {
+  background-color: #131632 !important;
+  border-bottom-color: #2e3563 !important;
+}
+.theme-midnight .card {
+  --bs-card-bg: #171b38;
+  --bs-card-border-color: #2e3563;
+}
+.theme-midnight .table {
+  --bs-table-bg: transparent;
+}
+.theme-midnight .btn-primary {
+  --bs-btn-bg: #5b6cff;
+  --bs-btn-border-color: #5b6cff;
+  --bs-btn-hover-bg: #4757e6;
+  --bs-btn-hover-border-color: #4757e6;
+}
+
+/* Sakura — light with pink accents */
+.theme-sakura {
+  --bs-body-bg: #fdf5f8;
+  --bs-body-color: #3d2231;
+  --bs-secondary-bg: #f7e3ec;
+  --bs-tertiary-bg: #faecf2;
+  --bs-border-color: #ecc8d9;
+}
+.theme-sakura .navbar {
+  background-color: #8e2a5c !important;
+  border-bottom-color: #6d1f46 !important;
+}
+.theme-sakura .card {
+  --bs-card-bg: #fff;
+  --bs-card-border-color: #ecc8d9;
+}
+.theme-sakura .btn-primary {
+  --bs-btn-bg: #d63384;
+  --bs-btn-border-color: #d63384;
+  --bs-btn-hover-bg: #b02a6c;
+  --bs-btn-hover-border-color: #b02a6c;
+}
+.theme-sakura .btn-outline-light {
+  --bs-btn-color: #8e2a5c;
+  --bs-btn-border-color: #c76d9e;
+  --bs-btn-hover-bg: #d63384;
+  --bs-btn-hover-border-color: #d63384;
+  --bs-btn-hover-color: #fff;
+}
+.theme-sakura .list-group-item.active {
+  background-color: #d63384;
+  border-color: #d63384;
+}
+
+/* Light theme: make btn-outline-light usable on light backgrounds */
+.theme-light .btn-outline-light {
+  --bs-btn-color: #495057;
+  --bs-btn-border-color: #adb5bd;
+  --bs-btn-hover-bg: #495057;
+  --bs-btn-hover-border-color: #495057;
+  --bs-btn-hover-color: #fff;
+}
+
+/* Dark, self-contained surfaces (live guide, mobile cards) always use light text
+   regardless of theme */
+.live-header, .mobile-event-card { color: #e8e8f0; }
+.theme-light main .text-white,
+.theme-sakura main .text-white { color: var(--bs-body-color) !important; }
+.theme-light .mobile-room-header,
+.theme-sakura .mobile-room-header { color: var(--bs-body-color); border-bottom-color: var(--bs-border-color); }
