@@ -99,14 +99,14 @@
         <h5 class="card-title">Data</h5>
         {% if event.sheets_enabled %}
           <p class="text-warning" style="font-size:0.8rem;">
-            This event syncs from Google Sheets — schedule, rooms, equipment, and
-            shifts edited here are overwritten on the next sync. Edit the sheet instead.
+            This event syncs from Google Sheets — data edited here is
+            overwritten on the next sync. Edit the sheet instead.
           </p>
         {% endif %}
         <div class="d-grid gap-2">
-          <a href="/admin/events/room/?event__id__exact={{ event.pk }}" class="btn btn-outline-light btn-sm">Rooms &amp; Equipment</a>
-          <a href="/admin/events/scheduleitem/?event__id__exact={{ event.pk }}" class="btn btn-outline-light btn-sm">Schedule Items</a>
-          <a href="/admin/events/staffshift/?event__id__exact={{ event.pk }}" class="btn btn-outline-light btn-sm">Staff Shifts</a>
+          <a href="{% url 'events:data_rooms' event.slug %}" class="btn btn-outline-light btn-sm">Rooms &amp; Equipment</a>
+          <a href="{% url 'events:data_schedule' event.slug %}" class="btn btn-outline-light btn-sm">Schedule Items</a>
+          <a href="{% url 'events:data_shifts' event.slug %}" class="btn btn-outline-light btn-sm">Staff Shifts</a>
         </div>
         {% if user|role_at_least:"Admin" %}
         <hr>

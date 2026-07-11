@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Staff Shift Data — {{ event.name }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h2>Staff Shifts</h2>
+  <div>
+    <a href="{% url 'events:data_shift_new' event.slug %}" class="btn btn-primary btn-sm">+ New Shift</a>
+    <a href="{% url 'events:manage' event.slug %}" class="btn btn-outline-secondary btn-sm ms-2">Back to Manage</a>
+  </div>
+</div>
+{% include "manage/data_warning.html" %}
+
+<div class="table-responsive">
+  <table class="table table-striped table-sm">
+    <thead>
+      <tr><th>Staff</th><th>When</th><th>Notes</th><th></th></tr>
+    </thead>
+    <tbody>
+      {% for shift in page.object_list %}
+      <tr>
+        <td>{{ shift.staff_name }}</td>
+        <td class="text-nowrap">{{ shift.starts_at|date:"D n/j g:i A" }} - {{ shift.ends_at|date:"g:i A" }}</td>
+        <td>{{ shift.notes }}</td>
+        <td class="text-nowrap">
+          <a href="{% url 'events:data_shift_edit' event.slug shift.pk %}" class="btn btn-outline-light btn-sm">Edit</a>
+          <form method="POST" action="{% url 'events:data_shift_delete' event.slug shift.pk %}" class="d-inline"
+                onsubmit="return confirm('Delete this shift?');">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-outline-danger btn-sm">Delete</button>
+          </form>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="4" class="text-muted">No shifts yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% if page.has_other_pages %}
+<nav>
+  <ul class="pagination pagination-sm">
+    {% if page.has_previous %}
+      <li class="page-item"><a class="page-link" href="?page={{ page.previous_page_number }}">&laquo;</a></li>
+    {% endif %}
+    <li class="page-item disabled"><span class="page-link">{{ page.number }} / {{ page.paginator.num_pages }}</span></li>
+    {% if page.has_next %}
+      <li class="page-item"><a class="page-link" href="?page={{ page.next_page_number }}">&raquo;</a></li>
+    {% endif %}
+  </ul>
+</nav>
+{% endif %}
+{% endblock %}
