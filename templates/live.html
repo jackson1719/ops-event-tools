@@ -354,9 +354,16 @@
       for (const e of room.events) {
         const isNow = e.start_min <= now && e.end_min > now;
         const nowBadge = isNow ? '<span class="mobile-now-badge">NOW</span>' : '';
-        const cardColor = e.event_name.toUpperCase() === 'STRIKE' ? '#b91c1c' : color;
+        let cardColor = e.event_name.toUpperCase() === 'STRIKE' ? '#b91c1c' : color;
+        let titleStyle = '';
+        let cancelledBadge = '';
+        if (e.cancelled) {
+          cardColor = '#3f3f46';
+          titleStyle = ' style="text-decoration:line-through;opacity:0.65;"';
+          cancelledBadge = '<span class="badge bg-secondary ms-1" style="font-size:0.6rem;">CANCELLED</span>';
+        }
         html += '<div class="mobile-event-card" style="border-left-color:' + cardColor + ';">';
-        html += '<div class="event-title">' + esc(e.event_name) + nowBadge + '</div>';
+        html += '<div class="event-title"><span' + titleStyle + '>' + esc(e.event_name) + '</span>' + cancelledBadge + nowBadge + '</div>';
         html += '<div class="event-meta">' + esc(e.start_time) + ' - ' + esc(e.end_time) + '</div>';
         if (e.description) html += '<div class="event-meta">' + esc(e.description) + '</div>';
         html += '</div>';

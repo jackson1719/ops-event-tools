@@ -1,5 +1,6 @@
 """Per-event sync: fetch sheets, parse once, replace/upsert in one transaction."""
 import logging
+import re
 from datetime import datetime, timedelta
 
 from django.db import connection, transaction
@@ -13,6 +14,17 @@ from .sheets import fetch_event_sheets
 log = logging.getLogger(__name__)
 
 RUNNING_STALE_AFTER = timedelta(minutes=5)
+
+CANCELLED_PREFIX = re.compile(r"^\s*cancell?ed[:\s\-]+", re.IGNORECASE)
+
+
+def split_cancelled(title: str) -> tuple[str, bool]:
+    """'CANCELLED Just Dance!' -> ('Just Dance!', True)."""
+    m = CANCELLED_PREFIX.match(title)
+    if not m:
+        return title, False
+    stripped = title[m.end():].strip()
+    return (stripped or title, True)
 
 
 def sync_event(event: Event) -> None:
@@ -76,7 +88,11 @@ def _apply(event: Event, data: dict) -> list[str]:
     for room in event.rooms.all():
         if (room.building, room.room_number) in seen_keys:
             continue
-        has_user_data = bool(room.layout_image) or room.checklist_items.filter(checked=True).exists()
+        has_user_data = (
+            bool(room.layout_image)
+            or bool(room.setup_status)
+            or room.checklist_items.filter(checked=True).exists()
+        )
         if has_user_data:
             warnings.append(
                 f"Room '{room}' removed from sheet but kept (has image or checked checklist items)."
@@ -119,15 +135,17 @@ def _apply(event: Event, data: dict) -> list[str]:
             )
             continue
         starts_at, ends_at = parsed
+        title, is_cancelled = split_cancelled(row["title"])
         schedule_objs.append(ScheduleItem(
             event=event,
             room=rooms_by_key.get((row["building"], row["room_number"])),
             building=row["building"],
             room_name=row["room_name"],
             room_number=row["room_number"],
-            title=row["title"],
+            title=title,
             description=row["description"],
             has_av=row["av"].lower() == "yes",
+            is_cancelled=is_cancelled,
             starts_at=starts_at,
             ends_at=ends_at,
         ))

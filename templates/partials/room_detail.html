@@ -5,6 +5,46 @@
   {% if room.room_number %} &middot; Room {{ room.room_number }}{% endif %}
 </p>
 
+{% if can_check %}
+<div class="d-flex align-items-center gap-2 mb-3 flex-wrap">
+  <label class="form-label mb-0"><strong>Setup status:</strong></label>
+  <select id="room-status-select" class="form-select form-select-sm" style="width:auto;">
+    {% for value, label in status_choices %}
+      <option value="{{ value }}" {% if room.setup_status == value %}selected{% endif %}>{{ label }}</option>
+    {% endfor %}
+  </select>
+  <input type="text" id="room-status-note" class="form-control form-control-sm" style="max-width:250px;"
+         placeholder="Note (optional)" value="{{ room.status_note }}">
+  <button id="room-status-save" class="btn btn-sm btn-outline-primary">Save</button>
+  <span id="room-status-saved" class="text-success" style="display:none;">Saved</span>
+  {% if room.status_updated_by %}
+    <small class="text-muted">— {{ room.status_updated_by }}, {{ room.status_updated_at|date:"n/j g:i A" }}</small>
+  {% endif %}
+</div>
+<script>
+document.getElementById('room-status-save').addEventListener('click', function() {
+  const status = document.getElementById('room-status-select').value;
+  const note = document.getElementById('room-status-note').value;
+  fetch("{% url 'events:room_status' event.slug room.pk %}", {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'X-CSRFToken': '{{ csrf_token }}'
+    },
+    body: 'status=' + encodeURIComponent(status) + '&note=' + encodeURIComponent(note)
+  }).then(function(r) {
+    if (r.ok) {
+      const el = document.getElementById('room-status-saved');
+      el.style.display = '';
+      setTimeout(function() { el.style.display = 'none'; }, 2000);
+    }
+  });
+});
+</script>
+{% elif room.setup_status %}
+<p><strong>Setup status:</strong> {{ room.get_setup_status_display }}{% if room.status_note %} — {{ room.status_note }}{% endif %}</p>
+{% endif %}
+
 {% if room.layout_image %}
   <div class="mb-4">
     <img src="{{ room.layout_image.url }}"
@@ -66,7 +106,14 @@
           <tr>
             <td class="text-nowrap">{{ item.starts_at|date:"l (n/j)" }}</td>
             <td class="text-nowrap">{{ item.starts_at|date:"g:i A" }} - {{ item.ends_at|date:"g:i A" }}</td>
-            <td>{{ item.title }}</td>
+            <td>
+              {% if item.is_cancelled %}
+                <span class="text-decoration-line-through text-muted">{{ item.title }}</span>
+                <span class="badge bg-secondary">Cancelled</span>
+              {% else %}
+                {{ item.title }}
+              {% endif %}
+            </td>
             <td>
               {% if item.has_av %}
                 <span class="badge bg-success">Yes</span>

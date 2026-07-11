@@ -1,0 +1,43 @@
+{% if not staff_name %}
+  <div class="alert alert-warning">
+    Your account isn't linked to a staff name yet. An admin can set
+    "Staff name" on your user account so it matches the Staff Shifts sheet.
+  </div>
+{% else %}
+  <h5>{{ staff_name }}</h5>
+  {% if shifts %}
+    <div class="table-responsive">
+      <table class="table table-striped">
+        <thead>
+          <tr>
+            <th>Day</th>
+            <th>Time</th>
+            <th>Notes</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for shift in shifts %}
+          <tr>
+            <td class="text-nowrap">{{ shift.starts_at|date:"l (n/j)" }}</td>
+            <td class="text-nowrap">{{ shift.starts_at|date:"g:i A" }} - {{ shift.ends_at|date:"g:i A" }}</td>
+            <td>{{ shift.notes }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <p class="text-muted">{{ shifts|length }} shift{{ shifts|length|pluralize }}</p>
+  {% else %}
+    <p class="text-muted">No shifts found for {{ staff_name }}.</p>
+  {% endif %}
+
+  {% if ics_url %}
+    <div class="card mt-3">
+      <div class="card-body py-2 px-3">
+        <h6 class="mb-1">Subscribe in your calendar app</h6>
+        <small class="text-muted">Add this URL as a calendar subscription (Google Calendar: "From URL"; iPhone: Settings &rsaquo; Calendar &rsaquo; Accounts &rsaquo; Add Subscribed Calendar):</small>
+        <input type="text" class="form-control form-control-sm mt-2" readonly value="{{ ics_url }}" onclick="this.select()">
+      </div>
+    </div>
+  {% endif %}
+{% endif %}

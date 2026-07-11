@@ -16,7 +16,9 @@ urlpatterns = [
 
     path("e/<slug:slug>/rooms", rooms.rooms_page, name="rooms"),
     path("e/<slug:slug>/rooms/<int:room_id>", rooms.room_detail, name="room_detail"),
+    path("e/<slug:slug>/rooms/<int:room_id>/status", rooms.set_room_status, name="room_status"),
     path("e/<slug:slug>/checklist/<int:item_id>/toggle", rooms.toggle_checklist, name="checklist_toggle"),
+    path("e/<slug:slug>/status", rooms.status_board, name="status_board"),
 
     path("e/<slug:slug>/staff", staff.staff_page, name="staff"),
     path("e/<slug:slug>/staff/table", staff.staff_table, name="staff_table"),
@@ -25,6 +27,8 @@ urlpatterns = [
     path("e/<slug:slug>/staff/heatmap", staff.staff_heatmap, name="staff_heatmap"),
     path("e/<slug:slug>/staff/directory", staff.staff_directory, name="staff_directory"),
     path("e/<slug:slug>/staff/print", staff.staff_print, name="staff_print"),
+    path("e/<slug:slug>/staff/mine", staff.staff_mine, name="staff_mine"),
+    path("e/<slug:slug>/staff/my.ics", staff.my_shifts_ics, name="staff_ics"),
 
     path("e/<slug:slug>/links", links.links_page, name="links"),
 

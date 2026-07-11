@@ -101,6 +101,27 @@ class EngineTests(TestCase):
         self.assertTrue(room.checklist_items.filter(checked=True).exists())
         self.assertIn("kept", self.event.last_sync_error)
 
+    def test_room_with_setup_status_survives_removal(self):
+        self.run_sync(sheet_data())
+        room = self.event.rooms.get(room_number="303")
+        room.setup_status = "ready"
+        room.save()
+        data = sheet_data()
+        data["rooms"] = [r for r in data["rooms"] if r["room_number"] != "303"]
+        self.run_sync(data)
+        self.assertTrue(self.event.rooms.filter(room_number="303").exists())
+
+    def test_cancelled_title_parsed(self):
+        data = sheet_data()
+        data["schedule"].append({
+            "title": "CANCELLED Karaoke Finals", "room_name": "Mainstage", "room_number": "4AB",
+            "building": "Arch", "av": "Yes", "description": "",
+            "date": "4/3/2026", "start_time": "3:00 PM", "end_time": "4:00 PM",
+        })
+        self.run_sync(data)
+        item = self.event.schedule_items.get(title="Karaoke Finals")
+        self.assertTrue(item.is_cancelled)
+
     def test_removed_plain_room_is_deleted(self):
         self.run_sync(sheet_data())
         data = sheet_data()

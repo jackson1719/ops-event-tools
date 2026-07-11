@@ -1,5 +1,7 @@
-from datetime import date, time, timedelta
+from datetime import date, time, timedelta, timezone as dt_timezone
 
+from django.contrib.auth.decorators import login_not_required
+from django.http import Http404, HttpResponse
 from django.shortcuts import render
 
 from accounts.roles import STAFF, require_role
@@ -139,6 +141,64 @@ def staff_directory(request, slug):
         "selected_staff": name,
         "staff_names": _distinct_staff(event),
     })
+
+
+@require_role(STAFF)
+def staff_mine(request, slug):
+    event = get_event_or_404(slug)
+    staff_name = request.user.staff_name
+    shifts = event.staff_shifts.filter(staff_name=staff_name) if staff_name else []
+    ics_url = None
+    if staff_name:
+        token = request.user.get_or_create_ical_token()
+        ics_url = request.build_absolute_uri(
+            f"/e/{event.slug}/staff/my.ics?token={token}"
+        )
+    return render(request, "partials/staff_mine.html", {
+        "event": event,
+        "shifts": shifts,
+        "staff_name": staff_name,
+        "ics_url": ics_url,
+    })
+
+
+def _ics_escape(value: str) -> str:
+    return value.replace("\\", "\\\\").replace(";", "\\;").replace(",", "\\,").replace("\n", "\\n")
+
+
+@login_not_required
+def my_shifts_ics(request, slug):
+    """Token-authenticated iCal feed — calendar apps can't do session login."""
+    from accounts.models import User
+
+    event = get_event_or_404(slug)
+    token = request.GET.get("token", "")
+    user = User.objects.filter(ical_token=token).first() if token else None
+    if user is None or not user.staff_name:
+        raise Http404
+
+    lines = [
+        "BEGIN:VCALENDAR",
+        "VERSION:2.0",
+        "PRODID:-//ops-event-tools//EN",
+        f"X-WR-CALNAME:{_ics_escape(event.name)} AV Shifts",
+    ]
+    for shift in event.staff_shifts.filter(staff_name=user.staff_name):
+        starts = shift.starts_at.astimezone(dt_timezone.utc)
+        ends = shift.ends_at.astimezone(dt_timezone.utc)
+        lines += [
+            "BEGIN:VEVENT",
+            f"UID:shift-{shift.pk}@ops-event-tools",
+            f"DTSTART:{starts.strftime('%Y%m%dT%H%M%SZ')}",
+            f"DTEND:{ends.strftime('%Y%m%dT%H%M%SZ')}",
+            f"SUMMARY:{_ics_escape(f'AV Shift — {event.name}')}",
+        ]
+        if shift.notes:
+            lines.append(f"DESCRIPTION:{_ics_escape(shift.notes)}")
+        lines.append("END:VEVENT")
+    lines.append("END:VCALENDAR")
+
+    return HttpResponse("\r\n".join(lines), content_type="text/calendar")
 
 
 @require_role(STAFF)

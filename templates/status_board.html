@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block title %}Room Status — {{ event.name }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h2>Room Setup Status</h2>
+  <a href="{% url 'events:rooms' event.slug %}" class="btn btn-outline-light btn-sm">Rooms</a>
+</div>
+
+<!-- Summary -->
+<div class="d-flex gap-2 flex-wrap mb-4">
+  {% for s in summary %}
+    <div class="px-3 py-2 rounded" style="background:{{ s.color }};color:#fff;min-width:110px;text-align:center;">
+      <div style="font-size:1.4rem;font-weight:bold;">{{ s.count }}</div>
+      <div style="font-size:0.8rem;">{{ s.label }}</div>
+    </div>
+  {% endfor %}
+  <div class="px-3 py-2 rounded border border-secondary" style="min-width:110px;text-align:center;">
+    <div style="font-size:1.4rem;font-weight:bold;">{{ total }}</div>
+    <div style="font-size:0.8rem;">Total</div>
+  </div>
+</div>
+
+{% for building_name, room_list in buildings.items %}
+  <h5 class="mt-4">{{ building_name }}</h5>
+  <div class="d-flex gap-2 flex-wrap">
+    {% for room in room_list %}
+      <a href="#" class="text-decoration-none status-room-chip"
+         data-url="{% url 'events:room_detail' event.slug room.pk %}"
+         title="{{ room.get_setup_status_display }}{% if room.status_note %} — {{ room.status_note }}{% endif %}{% if room.status_updated_by %} ({{ room.status_updated_by }}){% endif %}">
+        <div class="px-3 py-2 rounded" style="background:{{ room.status_meta.color }};color:#fff;min-width:130px;">
+          <div style="font-weight:600;font-size:0.9rem;">{{ room.room_number }}</div>
+          <div style="font-size:0.75rem;opacity:0.9;">{{ room.name|truncatechars:24 }}</div>
+          {% if room.status_note %}
+            <div style="font-size:0.7rem;opacity:0.85;">{{ room.status_note|truncatechars:30 }}</div>
+          {% endif %}
+        </div>
+      </a>
+    {% endfor %}
+  </div>
+{% empty %}
+  <p class="text-muted">No rooms yet.</p>
+{% endfor %}
+
+<!-- Room detail modal-ish overlay reusing the mobile pattern -->
+<div id="status-room-overlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;z-index:1050;background:rgba(15,15,25,0.97);overflow-y:auto;">
+  <div class="p-3 container" style="max-width:900px;">
+    <button id="status-back-btn" class="btn btn-outline-light btn-sm mb-3">&larr; Back to Status Board</button>
+    <div id="status-room-detail"></div>
+  </div>
+</div>
+
+<script>
+document.querySelectorAll('.status-room-chip').forEach(function(chip) {
+  chip.addEventListener('click', function(e) {
+    e.preventDefault();
+    const overlay = document.getElementById('status-room-overlay');
+    const detail = document.getElementById('status-room-detail');
+    detail.innerHTML = '<p class="text-muted">Loading...</p>';
+    overlay.style.display = 'block';
+    document.body.style.overflow = 'hidden';
+    fetch(this.dataset.url).then(r => r.text()).then(html => {
+      detail.innerHTML = html;
+      detail.querySelectorAll('script').forEach(old => {
+        const s = document.createElement('script');
+        s.textContent = old.textContent;
+        old.replaceWith(s);
+      });
+    });
+  });
+});
+document.getElementById('status-back-btn').addEventListener('click', function() {
+  document.getElementById('status-room-overlay').style.display = 'none';
+  document.body.style.overflow = '';
+  window.location.reload();  // reflect any status change on the board
+});
+</script>
+{% endblock %}

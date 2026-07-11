@@ -21,7 +21,12 @@
         <td>{{ item.building }}</td>
         <td>{{ item.room_label }}</td>
         <td>
-          {{ item.title }}
+          {% if item.is_cancelled %}
+            <span class="text-decoration-line-through text-muted">{{ item.title }}</span>
+            <span class="badge bg-secondary">Cancelled</span>
+          {% else %}
+            {{ item.title }}
+          {% endif %}
           {% if item.description %}
             <br><small class="text-muted">{{ item.description }}</small>
           {% endif %}
@@ -48,7 +53,12 @@
     <div class="card mb-2">
       <div class="card-body py-2 px-3">
         <div>
-          <strong>{{ item.title }}</strong>
+          {% if item.is_cancelled %}
+            <strong class="text-decoration-line-through text-muted">{{ item.title }}</strong>
+            <span class="badge bg-secondary ms-1" style="font-size:0.65rem;">CANCELLED</span>
+          {% else %}
+            <strong>{{ item.title }}</strong>
+          {% endif %}
           {% if item.has_av %}
             <span class="badge bg-success ms-1" style="font-size:0.65rem;">AV</span>
           {% endif %}

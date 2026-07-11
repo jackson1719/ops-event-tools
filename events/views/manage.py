@@ -11,6 +11,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
 from accounts.roles import MANAGER, require_role
+from ..audit import audit
 from ..models import Link, Room
 from ..shortcuts import get_event_or_404
 
@@ -29,7 +30,11 @@ def _room_slug(room: Room) -> str:
 @require_role(MANAGER)
 def dashboard(request, slug):
     event = get_event_or_404(slug)
-    return render(request, "manage/dashboard.html", {"event": event})
+    recent_activity = event.audit_logs.select_related("user")[:20]
+    return render(request, "manage/dashboard.html", {
+        "event": event,
+        "recent_activity": recent_activity,
+    })
 
 
 @require_role(MANAGER)
@@ -42,6 +47,7 @@ def trigger_sync(request, slug):
 
     from sync.engine import sync_event_in_thread
     threading.Thread(target=sync_event_in_thread, args=(event.pk,), daemon=True).start()
+    audit(event, request.user, "sync", "Manual sync triggered")
     messages.info(request, "Sync started in background.")
     return redirect("events:manage", slug=slug)
 
@@ -68,6 +74,7 @@ def edit_links(request, slug):
                 ))
         event.links.all().delete()
         Link.objects.bulk_create(new_links)
+        audit(event, request.user, "links", f"Saved {len(new_links)} links")
         messages.success(request, "Links saved.")
         return redirect("events:manage_links", slug=slug)
 
@@ -101,6 +108,7 @@ def upload_room_image(request, slug, room_id):
         room.layout_image.delete(save=False)
     room.layout_image = file
     room.save()
+    audit(event, request.user, "image", f"Uploaded layout image for {room}")
     messages.success(request, f"Image uploaded for {room}.")
     return redirect("events:manage_room_images", slug=slug)
 
@@ -139,6 +147,8 @@ def bulk_upload_room_images(request, slug):
         msg += f" Skipped {len(skipped)}: {', '.join(skipped[:5])}"
         if len(skipped) > 5:
             msg += f" and {len(skipped) - 5} more"
+    if uploaded:
+        audit(event, request.user, "image", f"Bulk-uploaded {uploaded} layout images")
     messages.add_message(request, messages.SUCCESS if uploaded else messages.WARNING, msg)
     return redirect("events:manage_room_images", slug=slug)
 
@@ -225,5 +235,7 @@ def save_pdf_assignments(request, slug, batch_id):
         assigned += 1
 
     shutil.rmtree(batch_dir, ignore_errors=True)
+    if assigned:
+        audit(event, request.user, "image", f"Assigned {assigned} PDF pages as layout images")
     messages.success(request, f"Assigned {assigned} page{'s' if assigned != 1 else ''} to rooms.")
     return redirect("events:manage_room_images", slug=slug)

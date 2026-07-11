@@ -53,6 +53,7 @@ def live_page(request, slug):
             "room_number": item.room_number,
             "building": item.building,
             "av": "Yes" if item.has_av else "No",
+            "cancelled": item.is_cancelled,
             "start_min": minutes_since_midnight(item.starts_at, display_date, tz),
             "end_min": minutes_since_midnight(item.ends_at, display_date, tz),
             "start_time": fmt_time(item.starts_at, tz),

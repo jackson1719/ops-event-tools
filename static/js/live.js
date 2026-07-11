@@ -211,10 +211,17 @@
         const clampEnd = Math.min(e.end_min, windowEnd);
         const leftPx = (clampStart - windowStart) * pxPerMin;
         const widthPx = (clampEnd - clampStart) * pxPerMin;
-        const color = e.event_name.toUpperCase() === 'STRIKE' ? '#b91c1c' : getColor(room.key);
+        let color = e.event_name.toUpperCase() === 'STRIKE' ? '#b91c1c' : getColor(room.key);
+        let extraStyle = '';
+        let tipPrefix = '';
+        if (e.cancelled) {
+          color = '#3f3f46';
+          extraStyle = 'text-decoration:line-through;opacity:0.65;';
+          tipPrefix = 'CANCELLED: ';
+        }
 
-        const tip = esc(e.start_time) + ' - ' + esc(e.end_time) + ': ' + esc(e.event_name) + (e.description ? '\n' + esc(e.description) : '');
-        rowHtml += `<div class="event-block" style="left:${leftPx}px;width:${widthPx}px;background:${color};"
+        const tip = tipPrefix + esc(e.start_time) + ' - ' + esc(e.end_time) + ': ' + esc(e.event_name) + (e.description ? '\n' + esc(e.description) : '');
+        rowHtml += `<div class="event-block" style="left:${leftPx}px;width:${widthPx}px;background:${color};${extraStyle}"
                          title="${tip}">
           <span class="event-time">${esc(e.start_time)}</span>
           ${esc(e.event_name)}

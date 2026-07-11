@@ -108,6 +108,13 @@ AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
 ]
 
+# Set SECURE_COOKIES=true when serving via HTTPS (e.g. behind the Cloudflare
+# tunnel). Leave false for plain-HTTP local-network testing or logins break.
+if os.getenv("SECURE_COOKIES", "false").lower() in ("1", "true", "yes"):
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
 # Sessions: default 4 days (parity with old app); kiosk checkbox extends to 90 days
 SESSION_COOKIE_AGE = 4 * 24 * 60 * 60
 KIOSK_SESSION_AGE = 90 * 24 * 60 * 60

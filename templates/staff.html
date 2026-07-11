@@ -11,6 +11,7 @@
   <div class="col-md-3">
     <label class="form-label">View</label>
     <select id="view-select" class="form-select">
+      <option value="mine" {% if selected_view == 'mine' %}selected{% endif %}>My Shifts</option>
       <option value="table" {% if selected_view == 'table' %}selected{% endif %}>Table</option>
       <option value="on-shift" {% if selected_view == 'on-shift' %}selected{% endif %}>On Shift Now</option>
       <option value="timeline" {% if selected_view == 'timeline' %}selected{% endif %}>Daily Timeline</option>
@@ -85,6 +86,7 @@
   const results = document.getElementById('staff-results');
 
   const URLS = {
+    mine: "{% url 'events:staff_mine' event.slug %}",
     table: "{% url 'events:staff_table' event.slug %}",
     onShift: "{% url 'events:staff_on_shift' event.slug %}",
     timeline: "{% url 'events:staff_timeline' event.slug %}",
@@ -109,7 +111,9 @@
     let url;
     const day = document.getElementById('filter-day-single').value;
 
-    if (view === 'table') {
+    if (view === 'mine') {
+      url = URLS.mine;
+    } else if (view === 'table') {
       const staff = document.getElementById('filter-staff').value;
       const tday = document.getElementById('filter-day').value;
       url = URLS.table + '?staff=' + encodeURIComponent(staff) + '&day=' + encodeURIComponent(tday);

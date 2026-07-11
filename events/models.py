@@ -51,12 +51,25 @@ class Event(models.Model):
 
 
 class Room(models.Model):
+    STATUS_CHOICES = [
+        ("", "Not started"),
+        ("in_progress", "In progress"),
+        ("ready", "Ready"),
+        ("issue", "Issue"),
+    ]
+
     event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name="rooms")
     building = models.CharField(max_length=100)
     room_number = models.CharField(max_length=50, blank=True)
     name = models.CharField(max_length=200, blank=True)
     floor = models.CharField(max_length=50, blank=True)
     layout_image = models.ImageField(upload_to=room_image_path, blank=True)
+
+    # Setup status — user data, preserved across syncs
+    setup_status = models.CharField(max_length=20, blank=True, choices=STATUS_CHOICES, default="")
+    status_note = models.CharField(max_length=300, blank=True)
+    status_updated_by = models.CharField(max_length=100, blank=True)
+    status_updated_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         ordering = ["building", "floor", "room_number"]
@@ -100,6 +113,7 @@ class ScheduleItem(models.Model):
     title = models.CharField(max_length=300)
     description = models.TextField(blank=True)
     has_av = models.BooleanField(default=False)
+    is_cancelled = models.BooleanField(default=False)
     starts_at = models.DateTimeField()
     ends_at = models.DateTimeField()
 
@@ -149,6 +163,23 @@ class ChecklistItem(models.Model):
 
     def __str__(self):
         return self.item
+
+
+class AuditLog(models.Model):
+    """Who did what, when — checklist toggles, status changes, syncs, edits."""
+
+    event = models.ForeignKey(Event, null=True, blank=True, on_delete=models.CASCADE, related_name="audit_logs")
+    user = models.ForeignKey("accounts.User", null=True, blank=True, on_delete=models.SET_NULL)
+    action = models.CharField(max_length=40)  # checklist / room_status / sync / links / image / clone
+    detail = models.CharField(max_length=1000, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [models.Index(fields=["event", "-created_at"])]
+
+    def __str__(self):
+        return f"{self.created_at:%m/%d %H:%M} {self.user} {self.action}"
 
 
 class Link(models.Model):

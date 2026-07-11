@@ -1,6 +1,8 @@
-from django.contrib import admin
+from django.contrib import admin, messages
 
-from .models import ChecklistItem, Equipment, Event, Link, Room, ScheduleItem, StaffShift
+from .audit import audit
+from .models import AuditLog, ChecklistItem, Equipment, Event, Link, Room, ScheduleItem, StaffShift
+from .services import clone_event
 
 
 class EquipmentInline(admin.TabularInline):
@@ -19,6 +21,26 @@ class EventAdmin(admin.ModelAdmin):
     list_display = ["name", "slug", "is_active", "sheets_enabled", "last_sync_status", "last_sync_at"]
     prepopulated_fields = {"slug": ["name"]}
     readonly_fields = ["last_sync_at", "last_sync_status", "last_sync_error"]
+    actions = ["clone_selected"]
+
+    @admin.action(description="Clone event (rooms, equipment, checklists, links — no schedule)")
+    def clone_selected(self, request, queryset):
+        if queryset.count() != 1:
+            self.message_user(request, "Select exactly one event to clone.", messages.ERROR)
+            return
+        source = queryset.first()
+        new_slug = f"{source.slug}-copy"
+        if Event.objects.filter(slug=new_slug).exists():
+            self.message_user(request, f"'{new_slug}' already exists — rename it first.", messages.ERROR)
+            return
+        new_event = clone_event(source, new_slug, f"{source.name} (copy)")
+        audit(new_event, request.user, "clone", f"Cloned from {source.slug}")
+        self.message_user(
+            request,
+            f"Cloned to '{new_event.slug}' ({new_event.rooms.count()} rooms). "
+            "Rename it and set its spreadsheet ID.",
+            messages.SUCCESS,
+        )
     fieldsets = [
         (None, {"fields": ["name", "slug", "timezone", "is_active"]}),
         ("Google Sheets (optional)", {"fields": [
@@ -59,3 +81,16 @@ class StaffShiftAdmin(admin.ModelAdmin):
 class LinkAdmin(admin.ModelAdmin):
     list_display = ["title", "url", "category", "position", "event"]
     list_filter = ["event", "category"]
+
+
+@admin.register(AuditLog)
+class AuditLogAdmin(admin.ModelAdmin):
+    list_display = ["created_at", "user", "action", "detail", "event"]
+    list_filter = ["event", "action"]
+    readonly_fields = ["event", "user", "action", "detail", "created_at"]
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
