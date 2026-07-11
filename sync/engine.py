@@ -6,10 +6,13 @@ from datetime import datetime, timedelta
 from django.db import connection, transaction
 from django.utils import timezone
 
-from events.models import ChecklistItem, Equipment, Event, Room, ScheduleItem, StaffShift
+from events.models import ChecklistItem, Equipment, Event, Room, ScheduleChange, ScheduleItem, StaffShift
 from events.timeutil import parse_sheet_date, parse_time_range
 
+from .schedule_diff import diff_schedules
 from .sheets import fetch_event_sheets
+
+CHANGE_RETENTION_DAYS = 14
 
 log = logging.getLogger(__name__)
 
@@ -122,7 +125,11 @@ def _apply(event: Event, data: dict) -> list[str]:
         ))
     Equipment.objects.bulk_create(equipment_objs)
 
-    # --- Schedule items: replace ---
+    # --- Schedule items: replace (snapshot first for change tracking) ---
+    old_schedule = list(event.schedule_items.values(
+        "title", "room_name", "room_number", "building",
+        "starts_at", "ends_at", "is_cancelled", "has_av",
+    ))
     event.schedule_items.all().delete()
     schedule_objs = []
     for row in data["schedule"]:
@@ -150,6 +157,17 @@ def _apply(event: Event, data: dict) -> list[str]:
             ends_at=ends_at,
         ))
     ScheduleItem.objects.bulk_create(schedule_objs)
+
+    # --- Change tracking (skipped on the first sync — everything would be "added") ---
+    if old_schedule:
+        changes = diff_schedules(event, old_schedule, schedule_objs, timezone.now())
+        ScheduleChange.objects.bulk_create(changes)
+        if changes:
+            log.info("Schedule changes detected for %s: %d", event.slug, len(changes))
+    ScheduleChange.objects.filter(
+        event=event,
+        synced_at__lt=timezone.now() - timedelta(days=CHANGE_RETENTION_DAYS),
+    ).delete()
 
     # --- Staff shifts: replace ---
     event.staff_shifts.all().delete()

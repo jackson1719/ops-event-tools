@@ -165,6 +165,37 @@ class ChecklistItem(models.Model):
         return self.item
 
 
+class ScheduleChange(models.Model):
+    """A schedule difference detected between two syncs — how staff find out
+    what programming changed overnight."""
+
+    CHANGE_TYPES = [
+        ("added", "Added"),
+        ("removed", "Removed"),
+        ("time_changed", "Time changed"),
+        ("room_changed", "Room changed"),
+        ("cancelled", "Cancelled"),
+        ("uncancelled", "Un-cancelled"),
+        ("av_changed", "AV changed"),
+    ]
+
+    event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name="schedule_changes")
+    change_type = models.CharField(max_length=20, choices=CHANGE_TYPES)
+    title = models.CharField(max_length=300)
+    building = models.CharField(max_length=100, blank=True)
+    room_label = models.CharField(max_length=260, blank=True)
+    starts_at = models.DateTimeField(null=True, blank=True)  # new start if present, else old
+    detail = models.CharField(max_length=500, blank=True)
+    synced_at = models.DateTimeField()
+
+    class Meta:
+        ordering = ["-synced_at", "starts_at"]
+        indexes = [models.Index(fields=["event", "-synced_at"])]
+
+    def __str__(self):
+        return f"{self.get_change_type_display()}: {self.title}"
+
+
 class AuditLog(models.Model):
     """Who did what, when — checklist toggles, status changes, syncs, edits."""
 

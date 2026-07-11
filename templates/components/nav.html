@@ -17,6 +17,12 @@
              href="{% url 'events:schedule' current_event.slug %}">Full Schedule</a>
         </li>
         <li class="nav-item">
+          <a class="nav-link {% if '/changes' in request.path %}active{% endif %}"
+             href="{% url 'events:changes' current_event.slug %}">Changes
+            {% if recent_changes %}<span class="badge rounded-pill bg-warning text-dark">{{ recent_changes }}</span>{% endif %}
+          </a>
+        </li>
+        <li class="nav-item">
           <a class="nav-link {% if '/rooms' in request.path %}active{% endif %}"
              href="{% url 'events:rooms' current_event.slug %}">Rooms</a>
         </li>

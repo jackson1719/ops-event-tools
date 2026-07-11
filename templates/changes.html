@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Schedule Changes — {{ event.name }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h2>Schedule Changes</h2>
+  <a href="{% url 'events:schedule' event.slug %}" class="btn btn-outline-secondary btn-sm">Full Schedule</a>
+</div>
+<p class="text-muted">Differences detected between spreadsheet syncs, most recent first. Kept for 14 days.</p>
+
+{% for run in runs %}
+  <h6 class="text-muted mt-4 mb-2 border-bottom border-secondary pb-1">
+    Sync on {{ run.synced_at|date:"l n/j g:i A" }} — {{ run.changes|length }} change{{ run.changes|length|pluralize }}
+  </h6>
+  <div class="list-group mb-2">
+    {% for change in run.changes %}
+      <div class="list-group-item bg-transparent d-flex align-items-start gap-2 flex-wrap">
+        {% if change.change_type == 'added' %}
+          <span class="badge bg-success">Added</span>
+        {% elif change.change_type == 'removed' %}
+          <span class="badge bg-danger">Removed</span>
+        {% elif change.change_type == 'cancelled' %}
+          <span class="badge bg-danger">Cancelled</span>
+        {% elif change.change_type == 'uncancelled' %}
+          <span class="badge bg-success">Un-cancelled</span>
+        {% elif change.change_type == 'time_changed' %}
+          <span class="badge bg-warning text-dark">Time</span>
+        {% elif change.change_type == 'room_changed' %}
+          <span class="badge bg-warning text-dark">Room</span>
+        {% elif change.change_type == 'av_changed' %}
+          <span class="badge bg-info text-dark">AV</span>
+        {% endif %}
+        <div>
+          <strong>{{ change.title }}</strong>
+          <span class="text-muted">
+            &middot; {{ change.building }}{% if change.room_label %} &middot; {{ change.room_label }}{% endif %}
+            {% if change.starts_at %} &middot; {{ change.starts_at|date:"D n/j g:i A" }}{% endif %}
+          </span>
+          {% if change.detail %}
+            <br><small class="text-muted">{{ change.detail }}</small>
+          {% endif %}
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+{% empty %}
+  <p class="text-muted">No schedule changes recorded yet. Changes appear here after the schedule differs between two syncs.</p>
+{% endfor %}
+{% endblock %}

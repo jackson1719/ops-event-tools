@@ -1,6 +1,6 @@
 from django.urls import path
 
-from .views import analytics, links, live, manage, picker, rooms, schedule, staff
+from .views import analytics, changes, links, live, manage, picker, rooms, schedule, staff
 
 app_name = "events"
 
@@ -13,6 +13,7 @@ urlpatterns = [
     path("e/<slug:slug>/schedule/table", schedule.schedule_table, name="schedule_table"),
     path("e/<slug:slug>/schedule/rooms", schedule.schedule_rooms, name="schedule_rooms"),
     path("e/<slug:slug>/schedule/print", schedule.schedule_print, name="schedule_print"),
+    path("e/<slug:slug>/changes", changes.changes_page, name="changes"),
 
     path("e/<slug:slug>/rooms", rooms.rooms_page, name="rooms"),
     path("e/<slug:slug>/rooms/<int:room_id>", rooms.room_detail, name="room_detail"),
