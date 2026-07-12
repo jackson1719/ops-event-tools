@@ -51,6 +51,25 @@ class SiteConfig(models.Model):
     backup_interval_hours = models.PositiveIntegerField(default=24)
     backup_keep = models.PositiveIntegerField(default=14)
 
+    # Direct HTTPS via ACME / Let's Encrypt (serves on :8443 once a cert exists)
+    ACME_METHODS = [
+        ("dns01", "DNS-01 via Cloudflare API (no inbound ports needed)"),
+        ("http01", "HTTP-01 (internet must reach port 80 -> this app)"),
+    ]
+    ssl_enabled = models.BooleanField(
+        default=False, help_text="Obtain and auto-renew a certificate, and serve HTTPS on port 8443.")
+    ssl_domain = models.CharField(max_length=200, blank=True)
+    acme_method = models.CharField(max_length=10, choices=ACME_METHODS, default="dns01")
+    cloudflare_api_token = models.CharField(max_length=200, blank=True)
+    acme_staging = models.BooleanField(
+        default=True,
+        help_text="Use Let's Encrypt's staging environment (untrusted test certs, no rate limits). "
+                  "Turn off once issuance works.")
+    acme_contact_email = models.CharField(max_length=200, blank=True)
+    cert_expires_at = models.DateTimeField(null=True, blank=True)
+    acme_last_status = models.CharField(max_length=20, blank=True)  # success / error / running
+    acme_last_error = models.TextField(blank=True)
+
     class Meta:
         verbose_name = "site configuration"
 
@@ -86,3 +105,22 @@ class SiteConfig(models.Model):
     @property
     def from_email(self) -> str:
         return self.default_from_email or self.email_host_user or "ops-event-tools@localhost"
+
+    @property
+    def ssl_ready(self) -> bool:
+        if not (self.ssl_enabled and self.ssl_domain):
+            return False
+        if self.acme_method == "dns01":
+            return bool(self.cloudflare_api_token)
+        return True
+
+
+class AcmeChallenge(models.Model):
+    """Pending HTTP-01 challenge tokens served at /.well-known/acme-challenge/."""
+
+    token = models.CharField(max_length=200, unique=True)
+    key_authorization = models.CharField(max_length=400)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.token

@@ -14,6 +14,8 @@ from .roles import ADMIN, require_role
 
 @require_role(ADMIN)
 def site_settings(request):
+    from sync.acme_client import cert_expiry, fullchain_path
+
     cfg = SiteConfig.load()
     if request.method == "POST":
         form = SiteConfigForm(request.POST, instance=cfg)
@@ -29,6 +31,8 @@ def site_settings(request):
         "form": form,
         "cfg": cfg,
         "last_backup": last_backup_time(),
+        "cert_exists": fullchain_path().exists(),
+        "cert_expiry": cert_expiry(),
     })
 
 
@@ -50,6 +54,29 @@ def send_test_email(request):
             messages.info(request, "SMTP not configured — test message printed to server logs.")
     except Exception as exc:
         messages.error(request, f"Send failed: {exc}")
+    return redirect("accounts:site_settings")
+
+
+@require_role(ADMIN)
+@require_POST
+def issue_certificate(request):
+    import threading
+
+    from sync.acme_client import issue_in_thread
+
+    cfg = SiteConfig.load()
+    if not cfg.ssl_ready:
+        messages.error(
+            request,
+            "Complete the HTTPS configuration first (enable it, set a domain, "
+            "and for DNS-01 a Cloudflare API token).",
+        )
+        return redirect("accounts:site_settings")
+
+    threading.Thread(target=issue_in_thread, daemon=True).start()
+    audit(None, request.user, "ssl", f"Certificate issuance started for {cfg.ssl_domain}"
+          + (" (staging)" if cfg.acme_staging else ""))
+    messages.info(request, "Certificate issuance started — refresh in ~a minute for status.")
     return redirect("accounts:site_settings")
 
 

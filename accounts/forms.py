@@ -16,10 +16,13 @@ class SiteConfigForm(forms.ModelForm):
             "email_host", "email_port", "email_use_tls",
             "email_host_user", "email_host_password", "default_from_email",
             "backup_enabled", "backup_interval_hours", "backup_keep",
+            "ssl_enabled", "ssl_domain", "acme_method", "cloudflare_api_token",
+            "acme_staging", "acme_contact_email",
         ]
         widgets = {
             "google_client_secret": forms.PasswordInput(render_value=False),
             "email_host_password": forms.PasswordInput(render_value=False),
+            "cloudflare_api_token": forms.PasswordInput(render_value=False),
         }
         help_texts = {
             "google_client_id": "OAuth client (Web application) from Google Cloud Console. "
@@ -37,6 +40,7 @@ class SiteConfigForm(forms.ModelForm):
         # Secrets are keep-if-blank
         self.fields["google_client_secret"].required = False
         self.fields["email_host_password"].required = False
+        self.fields["cloudflare_api_token"].required = False
 
     def clean_google_client_secret(self):
         value = self.cleaned_data["google_client_secret"]
@@ -45,6 +49,13 @@ class SiteConfigForm(forms.ModelForm):
     def clean_email_host_password(self):
         value = self.cleaned_data["email_host_password"]
         return value or self.instance.email_host_password
+
+    def clean_cloudflare_api_token(self):
+        value = self.cleaned_data["cloudflare_api_token"]
+        return value or self.instance.cloudflare_api_token
+
+    def clean_ssl_domain(self):
+        return self.cleaned_data["ssl_domain"].strip().lower().rstrip(".")
 
 
 class StyledRequestLoginCodeForm(RequestLoginCodeForm):

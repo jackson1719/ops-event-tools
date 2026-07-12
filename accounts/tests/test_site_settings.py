@@ -29,6 +29,8 @@ class SiteSettingsTests(TestCase):
             "email_host_user": "av@example.com", "email_host_password": "apppass",
             "default_from_email": "",
             "backup_enabled": "on", "backup_interval_hours": "12", "backup_keep": "7",
+            "ssl_domain": "", "acme_method": "dns01", "cloudflare_api_token": "",
+            "acme_staging": "on", "acme_contact_email": "",
         })
         self.assertRedirects(resp, "/accounts/site-settings/")
         cfg = SiteConfig.load()
@@ -48,6 +50,8 @@ class SiteSettingsTests(TestCase):
             "google_client_id": "", "google_client_secret": "",
             "default_from_email": "",
             "backup_enabled": "on", "backup_interval_hours": "24", "backup_keep": "14",
+            "ssl_domain": "", "acme_method": "dns01", "cloudflare_api_token": "",
+            "acme_staging": "on", "acme_contact_email": "",
         })
         cfg.refresh_from_db()
         self.assertEqual(cfg.email_host_password, "original")

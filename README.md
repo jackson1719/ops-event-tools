@@ -105,3 +105,23 @@ Postgres later: `pip install psycopg`, set `DB_ENGINE=postgresql` +
 ```bash
 ./venv/bin/python manage.py test
 ```
+
+## Direct HTTPS (ACME / Let's Encrypt)
+
+The app can serve HTTPS itself on **port 8443**, with certificates obtained and
+auto-renewed in-app. Configure in **Site Settings → HTTPS / SSL**:
+
+1. Set the domain (for LAN use, a DNS-only/grey-cloud A record pointing at the
+   box) and add it to `ALLOWED_HOSTS` in `.env`.
+2. Pick a validation method:
+   - **DNS-01 via Cloudflare** (recommended): paste an API token with
+     *Zone Read + DNS Edit* — no open ports required.
+   - **HTTP-01**: the internet must reach port 80 on this machine
+     (router-forward 80 → 3001).
+3. Leave **Staging mode** on for the first attempt (untrusted test cert, no
+   rate limits), click **Issue Certificate Now**, then turn staging off and
+   issue again for the real certificate.
+
+The `ops-event-tools-ssl` systemd unit idles until a certificate exists, then
+serves `https://<domain>:8443`; renewals happen automatically ~30 days before
+expiry and reload the listener without downtime.

@@ -180,11 +180,6 @@ STORAGES = {
 MEDIA_URL = "media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
-# Keep test-created uploads (clone/backup tests) out of the real media dir
-if "test" in sys.argv:
-    import tempfile
-    MEDIA_ROOT = Path(tempfile.mkdtemp(prefix="ops-test-media-"))
-    BACKUP_DIR = Path(tempfile.mkdtemp(prefix="ops-test-backups-"))
 
 # Sized for the PDF room-layout upload flow
 DATA_UPLOAD_MAX_MEMORY_SIZE = 60 * 1024 * 1024
@@ -197,6 +192,16 @@ GOOGLE_CREDENTIALS_FILE = os.getenv("GOOGLE_CREDENTIALS_FILE", str(BASE_DIR / "c
 # In-app scheduled backups run inside the web process; enable/interval/keep
 # live in SiteConfig (Site Settings UI). Only the destination path is env.
 BACKUP_DIR = Path(os.getenv("BACKUP_DIR", BASE_DIR / "backups"))
+
+# ACME/Let's Encrypt certificates (issued in-app; ops-event-tools-ssl serves them)
+CERT_DIR = Path(os.getenv("CERT_DIR", BASE_DIR / "certs"))
+
+# Keep test-created files (clone/backup/cert tests) out of the real dirs
+if "test" in sys.argv:
+    import tempfile
+    MEDIA_ROOT = Path(tempfile.mkdtemp(prefix="ops-test-media-"))
+    BACKUP_DIR = Path(tempfile.mkdtemp(prefix="ops-test-backups-"))
+    CERT_DIR = Path(tempfile.mkdtemp(prefix="ops-test-certs-"))
 
 LOGGING = {
     "version": 1,

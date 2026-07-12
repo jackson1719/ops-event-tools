@@ -1,0 +1,28 @@
+[Unit]
+Description=Ops Event Tools — HTTPS listener (:8443, ACME cert from Site Settings)
+After=network.target
+
+[Service]
+Type=exec
+User=jthomas
+Group=jthomas
+WorkingDirectory=/opt/ops-event-tools
+EnvironmentFile=/opt/ops-event-tools/.env
+# Wait quietly until the app has issued a certificate (feature may be dormant)
+ExecStartPre=/bin/sh -c 'while [ ! -f /opt/ops-event-tools/certs/fullchain.pem ]; do sleep 30; done'
+TimeoutStartSec=infinity
+ExecStart=/opt/ops-event-tools/venv/bin/gunicorn config.wsgi:application \
+    --workers 2 --bind 0.0.0.0:8443 \
+    --certfile /opt/ops-event-tools/certs/fullchain.pem \
+    --keyfile /opt/ops-event-tools/certs/privkey.pem \
+    --pid /opt/ops-event-tools/certs/ssl.pid \
+    --access-logfile -
+Restart=on-failure
+RestartSec=5
+
+NoNewPrivileges=true
+ProtectSystem=strict
+ReadWritePaths=/opt/ops-event-tools
+
+[Install]
+WantedBy=multi-user.target

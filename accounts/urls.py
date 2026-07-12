@@ -14,4 +14,5 @@ urlpatterns = [
     path("site-settings/", views_site.site_settings, name="site_settings"),
     path("site-settings/test-email", views_site.send_test_email, name="site_test_email"),
     path("site-settings/backup", views_site.trigger_backup, name="site_backup"),
+    path("site-settings/issue-cert", views_site.issue_certificate, name="site_issue_cert"),
 ]

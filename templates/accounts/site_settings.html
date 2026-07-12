@@ -81,6 +81,73 @@
 
       <div class="card mb-4">
         <div class="card-body">
+          <h5 class="card-title">
+            HTTPS / SSL
+            {% if cert_exists %}
+              {% if cfg.acme_last_status == 'error' %}
+                <span class="badge bg-danger ms-1">error</span>
+              {% else %}
+                <span class="badge bg-success ms-1">certificate installed</span>
+              {% endif %}
+            {% elif cfg.acme_last_status == 'running' %}
+              <span class="badge bg-warning text-dark ms-1">issuing…</span>
+            {% elif cfg.acme_last_status == 'error' %}
+              <span class="badge bg-danger ms-1">error</span>
+            {% endif %}
+          </h5>
+          <p class="text-muted" style="font-size:0.85rem;">
+            Obtain a Let's Encrypt certificate and serve HTTPS directly on
+            <code>https://&lt;domain&gt;:8443</code>. DNS-01 (recommended for this LAN box)
+            needs a Cloudflare API token with <em>Zone&nbsp;Read + DNS&nbsp;Edit</em> and works with no
+            open ports; HTTP-01 requires the internet to reach port 80 on this machine
+            (router forward 80 → 3001) and a DNS-only (grey-cloud) record.
+            Remember to add the domain to <code>ALLOWED_HOSTS</code> in <code>.env</code>.
+          </p>
+          {% if cert_expiry %}
+            <p class="mb-2"><strong>Certificate expires:</strong> {{ cert_expiry|date:"m/d/Y" }}
+              <small class="text-muted">(auto-renews ~30 days before)</small></p>
+          {% endif %}
+          {% if cfg.acme_last_error %}
+            <details class="mb-3">
+              <summary class="text-warning">Last issuance error</summary>
+              <pre class="text-danger mt-2" style="font-size:0.75rem;white-space:pre-wrap;">{{ cfg.acme_last_error }}</pre>
+            </details>
+          {% endif %}
+          <div class="form-check mb-3">
+            {{ form.ssl_enabled }}
+            <label class="form-check-label" for="{{ form.ssl_enabled.id_for_label }}">
+              <strong>Enable HTTPS</strong> <small class="text-muted">{{ form.ssl_enabled.help_text }}</small>
+            </label>
+          </div>
+          <div class="mb-3">
+            <label class="form-label" for="{{ form.ssl_domain.id_for_label }}">Domain</label>
+            {{ form.ssl_domain }}
+          </div>
+          <div class="mb-3">
+            <label class="form-label" for="{{ form.acme_method.id_for_label }}">Validation method</label>
+            {{ form.acme_method }}
+          </div>
+          <div class="mb-3">
+            <label class="form-label" for="{{ form.cloudflare_api_token.id_for_label }}">Cloudflare API token (DNS-01)</label>
+            {{ form.cloudflare_api_token }}
+            <div class="form-text">Leave blank to keep the current token.</div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label" for="{{ form.acme_contact_email.id_for_label }}">Contact email (optional)</label>
+            {{ form.acme_contact_email }}
+            <div class="form-text">Let's Encrypt expiry warnings go here.</div>
+          </div>
+          <div class="form-check">
+            {{ form.acme_staging }}
+            <label class="form-check-label" for="{{ form.acme_staging.id_for_label }}">
+              Staging mode <small class="text-muted">{{ form.acme_staging.help_text }}</small>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="card mb-4">
+        <div class="card-body">
           <h5 class="card-title">Backups</h5>
           <p class="mb-2">
             <strong>Last backup:</strong>
@@ -134,6 +201,10 @@
           <form method="POST" action="{% url 'accounts:site_backup' %}">
             {% csrf_token %}
             <button type="submit" class="btn btn-outline-light btn-sm">Back Up Now</button>
+          </form>
+          <form method="POST" action="{% url 'accounts:site_issue_cert' %}">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-outline-light btn-sm">Issue Certificate Now</button>
           </form>
         </div>
       </div>

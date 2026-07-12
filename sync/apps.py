@@ -17,3 +17,5 @@ class SyncConfig(AppConfig):
         if _running_as_server():
             from .backups import start_backup_scheduler
             start_backup_scheduler()
+            from .acme_client import start_renewal_scheduler
+            start_renewal_scheduler()

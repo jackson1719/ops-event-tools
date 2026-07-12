@@ -3,6 +3,7 @@ from django.contrib.auth.decorators import login_not_required
 from django.urls import include, path
 from django.views.generic import TemplateView
 
+from accounts.views_acme import acme_challenge
 from events.views.media import serve_media
 
 # Served at the root so its scope covers the whole site
@@ -18,5 +19,6 @@ urlpatterns = [
     path("accounts/", include("allauth.urls")),
     path("media/<path:path>", serve_media, name="media"),
     path("sw.js", service_worker, name="service_worker"),
+    path(".well-known/acme-challenge/<str:token>", acme_challenge, name="acme_challenge"),
     path("", include("events.urls")),
 ]

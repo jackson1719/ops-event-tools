@@ -38,12 +38,13 @@ echo "==> Collecting static files"
 ./venv/bin/python manage.py collectstatic --noinput | tail -1
 
 echo "==> Installing systemd units"
-sudo cp deploy/ops-event-tools.service deploy/ops-sync.service deploy/ops-sync.timer /etc/systemd/system/
+sudo cp deploy/ops-event-tools.service deploy/ops-event-tools-ssl.service deploy/ops-sync.service deploy/ops-sync.timer /etc/systemd/system/
 sudo systemctl daemon-reload
-sudo systemctl enable ops-event-tools ops-sync.timer
+sudo systemctl enable ops-event-tools ops-event-tools-ssl ops-sync.timer
 
 echo "==> (Re)starting services"
 sudo systemctl restart ops-event-tools
+sudo systemctl restart --no-block ops-event-tools-ssl
 sudo systemctl start ops-sync.timer
 
 echo
