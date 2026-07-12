@@ -30,7 +30,13 @@ def login_view(request):
             return redirect("events:picker")
         messages.error(request, "Invalid username or password.")
 
-    return render(request, "accounts/login.html", {"next": request.GET.get("next", "")})
+    from .models import SiteConfig
+    cfg = SiteConfig.load()
+    return render(request, "accounts/login.html", {
+        "next": request.GET.get("next", ""),
+        "show_google": cfg.google_ready,
+        "show_code_login": cfg.code_login_enabled,
+    })
 
 
 def logout_view(request):

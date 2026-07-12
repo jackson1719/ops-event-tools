@@ -14,6 +14,12 @@ class LoginRequiredMiddleware(DjangoLoginRequiredMiddleware):
 
     def process_view(self, request, view_func, view_args, view_kwargs):
         if (getattr(view_func, "__module__", "") or "").startswith("allauth."):
+            # Code login can be switched off in Site Settings
+            if request.path.startswith("/accounts/login/code"):
+                from .models import SiteConfig
+                if not SiteConfig.load().code_login_enabled:
+                    from django.shortcuts import redirect
+                    return redirect(settings.LOGIN_URL)
             return None
         return super().process_view(request, view_func, view_args, view_kwargs)
 

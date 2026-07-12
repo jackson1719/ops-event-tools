@@ -68,11 +68,11 @@ class EventSettingsTests(TestCase):
 
     def test_staff_cannot_edit_settings(self):
         self.client.login(username="staff", password="pw")
-        self.assertEqual(self.client.get(f"/e/{self.event.slug}/manage/settings").status_code, 403)
+        self.assertEqual(self.client.get(f"/e/{self.event.slug}/settings/event").status_code, 403)
 
     def test_manager_updates_timezone(self):
         self.client.login(username="manager", password="pw")
-        resp = self.client.post(f"/e/{self.event.slug}/manage/settings", {
+        resp = self.client.post(f"/e/{self.event.slug}/settings/event", {
             "name": "Test Con", "timezone": "America/New_York", "is_active": "on",
             "spreadsheet_id": "", "rooms_tab": "Rooms", "equipment_tab": "Equipment",
             "schedule_tab": "Events", "staff_tab": "Staff Shifts", "checklist_tab": "",
@@ -83,7 +83,7 @@ class EventSettingsTests(TestCase):
 
     def test_invalid_timezone_rejected(self):
         self.client.login(username="manager", password="pw")
-        resp = self.client.post(f"/e/{self.event.slug}/manage/settings", {
+        resp = self.client.post(f"/e/{self.event.slug}/settings/event", {
             "name": "Test Con", "timezone": "Pacific/Narnia", "is_active": "on",
             "spreadsheet_id": "", "rooms_tab": "Rooms", "equipment_tab": "Equipment",
             "schedule_tab": "Events", "staff_tab": "Staff Shifts", "checklist_tab": "",
@@ -98,9 +98,9 @@ class EventSettingsTests(TestCase):
             "name": "New Con", "slug": "new-con",
             "timezone": "America/Los_Angeles", "spreadsheet_id": "",
         })
-        self.assertRedirects(resp, "/e/new-con/manage/settings")
+        self.assertRedirects(resp, "/e/new-con/settings/event")
         self.assertTrue(Event.objects.filter(slug="new-con").exists())
 
     def test_audit_page_renders(self):
         self.client.login(username="manager", password="pw")
-        self.assertEqual(self.client.get(f"/e/{self.event.slug}/manage/audit").status_code, 200)
+        self.assertEqual(self.client.get(f"/e/{self.event.slug}/settings/audit").status_code, 200)

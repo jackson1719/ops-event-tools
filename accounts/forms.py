@@ -3,8 +3,48 @@ from django import forms
 from django.contrib.auth.models import Group
 from django.contrib.auth.password_validation import validate_password
 
-from .models import User
+from .models import SiteConfig, User
 from .roles import ROLE_ORDER
+
+
+class SiteConfigForm(forms.ModelForm):
+    class Meta:
+        model = SiteConfig
+        fields = [
+            "google_login_enabled", "google_client_id", "google_client_secret",
+            "code_login_enabled",
+            "email_host", "email_port", "email_use_tls",
+            "email_host_user", "email_host_password", "default_from_email",
+            "backup_enabled", "backup_interval_hours", "backup_keep",
+        ]
+        widgets = {
+            "google_client_secret": forms.PasswordInput(render_value=False),
+            "email_host_password": forms.PasswordInput(render_value=False),
+        }
+        help_texts = {
+            "google_client_id": "OAuth client (Web application) from Google Cloud Console. "
+                                "Redirect URI: <origin>/accounts/google/login/callback/",
+            "google_client_secret": "Leave blank to keep the current secret.",
+            "email_host_user": "Blank = sign-in codes print to the server logs instead of sending.",
+            "email_host_password": "Gmail app password (no spaces). Leave blank to keep current.",
+            "default_from_email": "Blank = use the SMTP username.",
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        from events.forms import bootstrapify
+        bootstrapify(self)
+        # Secrets are keep-if-blank
+        self.fields["google_client_secret"].required = False
+        self.fields["email_host_password"].required = False
+
+    def clean_google_client_secret(self):
+        value = self.cleaned_data["google_client_secret"]
+        return value or self.instance.google_client_secret
+
+    def clean_email_host_password(self):
+        value = self.cleaned_data["email_host_password"]
+        return value or self.instance.email_host_password
 
 
 class StyledRequestLoginCodeForm(RequestLoginCodeForm):

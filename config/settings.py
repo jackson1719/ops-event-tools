@@ -131,29 +131,19 @@ ACCOUNT_EMAIL_VERIFICATION = "none"  # admin-entered emails are trusted
 ACCOUNT_PREVENT_ENUMERATION = False  # internal tool: friendly "unknown email" errors
 SOCIALACCOUNT_EMAIL_AUTHENTICATION = True
 SOCIALACCOUNT_EMAIL_AUTHENTICATION_AUTO_CONNECT = True
+# Google app credentials come from SiteConfig via SocialAccountAdapter.list_apps
+# (editable in Site Settings); only non-credential options live here.
 SOCIALACCOUNT_PROVIDERS = {
     "google": {
-        "APPS": [{
-            "client_id": os.getenv("GOOGLE_OAUTH_CLIENT_ID", ""),
-            "secret": os.getenv("GOOGLE_OAUTH_CLIENT_SECRET", ""),
-            "key": "",
-        }],
         "SCOPE": ["profile", "email"],
         "AUTH_PARAMS": {"prompt": "select_account"},
     },
 }
 
-# Email: Gmail SMTP when configured, console backend otherwise (codes print to logs)
-EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "")
-if EMAIL_HOST_USER:
-    EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
-    EMAIL_HOST = os.getenv("EMAIL_HOST", "smtp.gmail.com")
-    EMAIL_PORT = int(os.getenv("EMAIL_PORT", "587"))
-    EMAIL_USE_TLS = True
-    EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "")
-else:
-    EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
-DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", EMAIL_HOST_USER or "ops-event-tools@localhost")
+# SMTP settings come from SiteConfig at send time (Site Settings UI); the
+# backend falls back to console output (codes in logs) when unconfigured.
+# Env EMAIL_*/GOOGLE_OAUTH_* vars are only used to SEED SiteConfig on first run.
+EMAIL_BACKEND = "accounts.email.DynamicEmailBackend"
 
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
@@ -204,12 +194,9 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 GOOGLE_CREDENTIALS_FILE = os.getenv("GOOGLE_CREDENTIALS_FILE", str(BASE_DIR / "credentials.json"))
 
-# In-app scheduled backups (SQLite snapshot + media archive). The scheduler
-# thread starts with the web server; no external cron/systemd involved.
-BACKUP_ENABLED = os.getenv("BACKUP_ENABLED", "true").lower() in ("1", "true", "yes")
+# In-app scheduled backups run inside the web process; enable/interval/keep
+# live in SiteConfig (Site Settings UI). Only the destination path is env.
 BACKUP_DIR = Path(os.getenv("BACKUP_DIR", BASE_DIR / "backups"))
-BACKUP_INTERVAL_HOURS = int(os.getenv("BACKUP_INTERVAL_HOURS", "24"))
-BACKUP_KEEP = int(os.getenv("BACKUP_KEEP", "14"))
 
 LOGGING = {
     "version": 1,

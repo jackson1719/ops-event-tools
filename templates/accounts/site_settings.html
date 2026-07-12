@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+{% block title %}Site Settings{% endblock %}
+
+{% block content %}
+<h2 class="mb-4">Site Settings</h2>
+
+<div class="row g-4">
+  <div class="col-lg-7">
+    <form method="POST">
+      {% csrf_token %}
+
+      <div class="card mb-4">
+        <div class="card-body">
+          <h5 class="card-title">Sign-in Methods</h5>
+          <p class="text-muted" style="font-size:0.85rem;">
+            Username &amp; password login is always available. Google and email-code
+            sign-in only work for accounts whose email an Admin has set.
+          </p>
+          <div class="form-check mb-2">
+            {{ form.google_login_enabled }}
+            <label class="form-check-label" for="{{ form.google_login_enabled.id_for_label }}">
+              <strong>Sign in with Google</strong>
+              {% if cfg.google_ready %}<span class="badge bg-success ms-1">configured</span>
+              {% elif cfg.google_login_enabled %}<span class="badge bg-warning text-dark ms-1">missing credentials</span>{% endif %}
+            </label>
+          </div>
+          <div class="mb-3 ms-4">
+            <label class="form-label" for="{{ form.google_client_id.id_for_label }}">Client ID</label>
+            {{ form.google_client_id }}
+            <div class="form-text">{{ form.google_client_id.help_text }}</div>
+            <label class="form-label mt-2" for="{{ form.google_client_secret.id_for_label }}">Client secret</label>
+            {{ form.google_client_secret }}
+            <div class="form-text">{{ form.google_client_secret.help_text }}</div>
+          </div>
+          <div class="form-check">
+            {{ form.code_login_enabled }}
+            <label class="form-check-label" for="{{ form.code_login_enabled.id_for_label }}">
+              <strong>Email me a sign-in code</strong>
+              {% if cfg.code_login_enabled and not cfg.smtp_configured %}
+                <span class="badge bg-warning text-dark ms-1">SMTP unset — codes go to server logs</span>
+              {% endif %}
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="card mb-4">
+        <div class="card-body">
+          <h5 class="card-title">Outgoing Email (SMTP)</h5>
+          <div class="row">
+            <div class="col-md-8 mb-3">
+              <label class="form-label" for="{{ form.email_host.id_for_label }}">Host</label>
+              {{ form.email_host }}
+            </div>
+            <div class="col-md-4 mb-3">
+              <label class="form-label" for="{{ form.email_port.id_for_label }}">Port</label>
+              {{ form.email_port }}
+            </div>
+          </div>
+          <div class="form-check mb-3">
+            {{ form.email_use_tls }}
+            <label class="form-check-label" for="{{ form.email_use_tls.id_for_label }}">Use TLS</label>
+          </div>
+          <div class="mb-3">
+            <label class="form-label" for="{{ form.email_host_user.id_for_label }}">Username</label>
+            {{ form.email_host_user }}
+            <div class="form-text">{{ form.email_host_user.help_text }}</div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label" for="{{ form.email_host_password.id_for_label }}">Password</label>
+            {{ form.email_host_password }}
+            <div class="form-text">{{ form.email_host_password.help_text }}</div>
+          </div>
+          <div class="mb-1">
+            <label class="form-label" for="{{ form.default_from_email.id_for_label }}">From address</label>
+            {{ form.default_from_email }}
+            <div class="form-text">{{ form.default_from_email.help_text }}</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card mb-4">
+        <div class="card-body">
+          <h5 class="card-title">Backups</h5>
+          <p class="mb-2">
+            <strong>Last backup:</strong>
+            {% if last_backup %}{{ last_backup|date:"m/d/Y g:i A" }}{% else %}Never{% endif %}
+            <small class="text-muted">— written to the backups/ folder by the app itself.</small>
+          </p>
+          <div class="form-check mb-3">
+            {{ form.backup_enabled }}
+            <label class="form-check-label" for="{{ form.backup_enabled.id_for_label }}">Automatic backups</label>
+          </div>
+          <div class="row">
+            <div class="col-md-6 mb-1">
+              <label class="form-label" for="{{ form.backup_interval_hours.id_for_label }}">Interval (hours)</label>
+              {{ form.backup_interval_hours }}
+            </div>
+            <div class="col-md-6 mb-1">
+              <label class="form-label" for="{{ form.backup_keep.id_for_label }}">Backups to keep</label>
+              {{ form.backup_keep }}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {% for error in form.non_field_errors %}<div class="alert alert-danger">{{ error }}</div>{% endfor %}
+      <button type="submit" class="btn btn-primary">Save Site Settings</button>
+    </form>
+  </div>
+
+  <div class="col-lg-5">
+    <div class="card mb-4">
+      <div class="card-body">
+        <h5 class="card-title">Administration</h5>
+        <div class="d-grid gap-2">
+          <a href="{% url 'accounts:user_list' %}" class="btn btn-outline-light">Users &amp; Roles</a>
+          <a href="{% url 'events:event_create' %}" class="btn btn-outline-light">New Event</a>
+          {% if user.is_superuser %}
+            <a href="{% url 'admin:index' %}" class="btn btn-outline-light">Django Admin</a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div class="card mb-4">
+      <div class="card-body">
+        <h5 class="card-title">Actions</h5>
+        <div class="d-flex gap-2 flex-wrap">
+          <form method="POST" action="{% url 'accounts:site_test_email' %}">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-outline-light btn-sm">Send Test Email</button>
+          </form>
+          <form method="POST" action="{% url 'accounts:site_backup' %}">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-outline-light btn-sm">Back Up Now</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

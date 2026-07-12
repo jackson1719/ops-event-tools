@@ -4,12 +4,12 @@
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-3">
   <h2>Assign PDF Pages to Rooms</h2>
-  <a href="{% url 'events:manage_room_images' event.slug %}" class="btn btn-outline-secondary btn-sm">Cancel</a>
+  <a href="{% url 'events:settings_room_images' event.slug %}" class="btn btn-outline-secondary btn-sm">Cancel</a>
 </div>
 
 <p class="text-muted">Select which room each page belongs to. Leave blank to skip a page.</p>
 
-<form method="POST" action="{% url 'events:manage_pdf_save' event.slug batch_id %}">
+<form method="POST" action="{% url 'events:settings_pdf_save' event.slug batch_id %}">
   {% csrf_token %}
   <div class="row g-3">
     {% for page in pages %}
@@ -41,7 +41,7 @@
 
   <div class="mt-4 mb-4">
     <button type="submit" class="btn btn-primary">Save Assignments</button>
-    <a href="{% url 'events:manage_room_images' event.slug %}" class="btn btn-outline-secondary ms-2">Cancel</a>
+    <a href="{% url 'events:settings_room_images' event.slug %}" class="btn btn-outline-secondary ms-2">Cancel</a>
   </div>
 </form>
 {% endblock %}

@@ -4,7 +4,7 @@
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-3">
   <h2>Room Layout Images</h2>
-  <a href="{% url 'events:manage' event.slug %}" class="btn btn-outline-secondary btn-sm">Back to Manage</a>
+  <a href="{% url 'events:settings' event.slug %}" class="btn btn-outline-secondary btn-sm">Back to Settings</a>
 </div>
 
 <!-- PDF Upload -->
@@ -14,7 +14,7 @@
     <p class="text-muted" style="font-size:0.85rem;">
       Upload a PDF with one room layout per page. You'll assign each page to a room on the next screen.
     </p>
-    <form method="POST" action="{% url 'events:manage_room_images_pdf' event.slug %}" enctype="multipart/form-data" class="d-flex gap-2 align-items-end">
+    <form method="POST" action="{% url 'events:settings_room_images_pdf' event.slug %}" enctype="multipart/form-data" class="d-flex gap-2 align-items-end">
       {% csrf_token %}
       <input type="file" name="pdf" accept=".pdf" class="form-control" style="max-width:400px;">
       <button type="submit" class="btn btn-primary">Upload PDF</button>
@@ -30,7 +30,7 @@
       Name files as <code>&lt;building&gt;_&lt;room_number&gt;.jpg</code> to auto-match rooms.
       Example: <code>summit_340_342.jpg</code>, <code>arch_6c.png</code>
     </p>
-    <form method="POST" action="{% url 'events:manage_room_images_bulk' event.slug %}" enctype="multipart/form-data" id="bulk-form">
+    <form method="POST" action="{% url 'events:settings_room_images_bulk' event.slug %}" enctype="multipart/form-data" id="bulk-form">
       {% csrf_token %}
       <div id="drop-zone" style="border:2px dashed #555;border-radius:8px;padding:40px;text-align:center;cursor:pointer;transition:border-color 0.2s;">
         <p class="mb-2">Drag and drop image files here, or click to browse</p>
@@ -85,7 +85,7 @@
       <div class="card-body py-2 px-3">
         <h6 class="card-title mb-1">{{ room.room_number }} — {{ room.name }}</h6>
         <small class="text-muted">{{ room.building }}</small>
-        <form method="POST" action="{% url 'events:manage_room_image_upload' event.slug room.pk %}"
+        <form method="POST" action="{% url 'events:settings_room_image_upload' event.slug room.pk %}"
               enctype="multipart/form-data" class="mt-2">
           {% csrf_token %}
           <div class="d-flex gap-2">

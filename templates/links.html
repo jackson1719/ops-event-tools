@@ -27,7 +27,7 @@
   <p class="text-muted">
     No links configured yet.
     {% if user|role_at_least:"Manager" %}
-      Add links in <a href="{% url 'events:manage_links' event.slug %}">Manage</a>.
+      Add links in <a href="{% url 'events:settings_links' event.slug %}">Settings</a>.
     {% endif %}
   </p>
 {% endif %}

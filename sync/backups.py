@@ -43,6 +43,11 @@ def last_backup_time() -> datetime | None:
     return datetime.fromtimestamp(files[-1].stat().st_mtime)
 
 
+def _config():
+    from accounts.models import SiteConfig
+    return SiteConfig.load()
+
+
 def perform_backup() -> str:
     """Take a backup now. Returns the archive path. Raises on failure."""
     settings.BACKUP_DIR.mkdir(parents=True, exist_ok=True)
@@ -54,15 +59,20 @@ def perform_backup() -> str:
         members = []
 
         if db["ENGINE"].endswith("sqlite3"):
+            # Snapshot through Django's own connection: the sqlite backup API
+            # is safe mid-use on the same connection, and opening a second
+            # connection to the file can deadlock against an open write
+            # transaction (e.g. the surrounding test-case transaction).
+            from django.db import connection as django_connection
+
             snapshot = os.path.join(tmp, "db.sqlite3")
-            src = sqlite3.connect(db["NAME"])
+            django_connection.ensure_connection()
+            dest = sqlite3.connect(snapshot)
             try:
-                dest = sqlite3.connect(snapshot)
                 with dest:
-                    src.backup(dest)
-                dest.close()
+                    django_connection.connection.backup(dest)
             finally:
-                src.close()
+                dest.close()
             members.append((snapshot, "db.sqlite3"))
         else:
             log.warning("Backup: non-SQLite database (%s) — dump it separately; archiving media only.",
@@ -78,8 +88,9 @@ def perform_backup() -> str:
         shutil.move(tmp_archive, archive_path)
 
     # Retention
+    keep = _config().backup_keep
     files = _backup_files()
-    for old in files[: max(0, len(files) - settings.BACKUP_KEEP)]:
+    for old in files[: max(0, len(files) - keep)]:
         old.unlink(missing_ok=True)
         log.info("Backup retention: removed %s", old.name)
 
@@ -112,34 +123,37 @@ def _release_lock():
         pass
 
 
-def _backup_due() -> bool:
+def _backup_due(cfg) -> bool:
     last = last_backup_time()
     if last is None:
         return True
     age_hours = (datetime.now() - last).total_seconds() / 3600
-    return age_hours >= settings.BACKUP_INTERVAL_HOURS
+    return age_hours >= cfg.backup_interval_hours
 
 
 def _scheduler_loop():
+    from django.db import connection
+
     while True:
         try:
-            if _backup_due() and _acquire_lock():
+            cfg = _config()
+            if cfg.backup_enabled and _backup_due(cfg) and _acquire_lock():
                 try:
                     # Re-check under the lock — another worker may have just finished
-                    if _backup_due():
+                    if _backup_due(cfg):
                         perform_backup()
                 finally:
                     _release_lock()
         except Exception:
             log.exception("Scheduled backup failed")
+        finally:
+            connection.close()
         time.sleep(CHECK_INTERVAL_SECONDS)
 
 
 def start_backup_scheduler():
-    if not settings.BACKUP_ENABLED:
-        log.info("Backups disabled (BACKUP_ENABLED=false)")
-        return
+    """Always started with the server; enable/disable and pacing come from
+    SiteConfig, checked every cycle so Site Settings changes apply live."""
     t = threading.Thread(target=_scheduler_loop, daemon=True, name="backup-scheduler")
     t.start()
-    log.info("Backup scheduler started (every %dh, keep %d, dir %s)",
-             settings.BACKUP_INTERVAL_HOURS, settings.BACKUP_KEEP, settings.BACKUP_DIR)
+    log.info("Backup scheduler started (config from Site Settings, dir %s)", settings.BACKUP_DIR)

@@ -7,10 +7,10 @@
   <h2>Schedule Items</h2>
   <div>
     <a href="{% url 'events:data_schedule_new' event.slug %}" class="btn btn-primary btn-sm">+ New Item</a>
-    <a href="{% url 'events:manage' event.slug %}" class="btn btn-outline-secondary btn-sm ms-2">Back to Manage</a>
+    <a href="{% url 'events:settings' event.slug %}" class="btn btn-outline-secondary btn-sm ms-2">Back to Settings</a>
   </div>
 </div>
-{% include "manage/data_warning.html" %}
+{% include "settings/data_warning.html" %}
 
 <form method="GET" class="row g-2 mb-3">
   <div class="col-auto">

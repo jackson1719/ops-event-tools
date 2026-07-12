@@ -23,7 +23,7 @@ class DataCrudTests(TestCase):
         self.client.login(username="manager", password="pw")
 
     def url(self, path):
-        return f"/e/{self.event.slug}/manage/data{path}"
+        return f"/e/{self.event.slug}/settings/data{path}"
 
     def test_staff_gets_403(self):
         self.client.login(username="staff", password="pw")

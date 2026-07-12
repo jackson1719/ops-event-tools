@@ -6,10 +6,10 @@
   <h2>Rooms &amp; Equipment</h2>
   <div>
     <a href="{% url 'events:data_room_new' event.slug %}" class="btn btn-primary btn-sm">+ New Room</a>
-    <a href="{% url 'events:manage' event.slug %}" class="btn btn-outline-secondary btn-sm ms-2">Back to Manage</a>
+    <a href="{% url 'events:settings' event.slug %}" class="btn btn-outline-secondary btn-sm ms-2">Back to Settings</a>
   </div>
 </div>
-{% include "manage/data_warning.html" %}
+{% include "settings/data_warning.html" %}
 
 <div class="table-responsive">
   <table class="table table-striped">

@@ -3,7 +3,7 @@
   This event syncs from Google Sheets — rooms, equipment, schedule, and shifts
   edited here are <strong>overwritten on the next sync</strong>. Edit the
   spreadsheet instead, or clear the spreadsheet ID in
-  <a href="{% url 'events:manage_settings' event.slug %}" class="alert-link">Event Settings</a>
+  <a href="{% url 'events:settings_event' event.slug %}" class="alert-link">Event Settings</a>
   to make the app authoritative.
 </div>
 {% endif %}

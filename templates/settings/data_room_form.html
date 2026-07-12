@@ -6,7 +6,7 @@
   <h2>{% if room %}Edit Room{% else %}New Room{% endif %}</h2>
   <a href="{% url 'events:data_rooms' event.slug %}" class="btn btn-outline-secondary btn-sm">Back to Rooms</a>
 </div>
-{% include "manage/data_warning.html" %}
+{% include "settings/data_warning.html" %}
 
 <form method="POST">
   {% csrf_token %}

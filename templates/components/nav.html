@@ -42,8 +42,8 @@
         </li>
         {% if user|role_at_least:"Manager" %}
         <li class="nav-item">
-          <a class="nav-link {% if '/manage' in request.path %}active{% endif %}"
-             href="{% url 'events:manage' current_event.slug %}">Manage</a>
+          <a class="nav-link {% if '/settings' in request.path %}active{% endif %}"
+             href="{% url 'events:settings' current_event.slug %}">Settings</a>
         </li>
         {% endif %}
       </ul>
@@ -99,7 +99,7 @@
             {% endfor %}
             <li><hr class="dropdown-divider"></li>
             {% if user|role_at_least:"Admin" %}
-              <li><a class="dropdown-item" href="{% url 'accounts:user_list' %}">Users</a></li>
+              <li><a class="dropdown-item" href="{% url 'accounts:site_settings' %}">Site Settings</a></li>
             {% endif %}
             {% if user.is_superuser %}
               <li><a class="dropdown-item" href="{% url 'admin:index' %}">Django Admin</a></li>

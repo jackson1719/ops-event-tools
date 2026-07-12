@@ -21,7 +21,7 @@ from ..shortcuts import get_event_or_404
 @require_role(MANAGER)
 def rooms_list(request, slug):
     event = get_event_or_404(slug)
-    return render(request, "manage/data_rooms.html", {"event": event, "rooms": event.rooms.all()})
+    return render(request, "settings/data_rooms.html", {"event": event, "rooms": event.rooms.all()})
 
 
 @require_role(MANAGER)
@@ -48,7 +48,7 @@ def room_edit(request, slug, room_id=None):
         equipment = EquipmentFormSet(instance=room, prefix="eq")
         checklist = ChecklistFormSet(instance=room, prefix="cl")
 
-    return render(request, "manage/data_room_form.html", {
+    return render(request, "settings/data_room_form.html", {
         "event": event, "room": room, "form": form,
         "equipment_formset": equipment if room else None,
         "checklist_formset": checklist if room else None,
@@ -86,7 +86,7 @@ def schedule_list(request, slug):
     if search:
         qs = qs.filter(Q(title__icontains=search) | Q(description__icontains=search))
     page = Paginator(qs, 50).get_page(request.GET.get("page"))
-    return render(request, "manage/data_schedule.html", {
+    return render(request, "settings/data_schedule.html", {
         "event": event, "page": page,
         "buildings": schedule_buildings(event), "days": schedule_days(event),
         "selected_building": building, "selected_day": day, "selected_search": search,
@@ -109,7 +109,7 @@ def schedule_edit(request, slug, item_id=None):
             return redirect("events:data_schedule", slug=slug)
     else:
         form = ScheduleItemForm(instance=item)
-    return render(request, "manage/data_form.html", {
+    return render(request, "settings/data_form.html", {
         "event": event, "form": form,
         "title": "Edit Schedule Item" if item else "New Schedule Item",
         "back_url_name": "events:data_schedule",
@@ -133,7 +133,7 @@ def schedule_delete(request, slug, item_id):
 def shifts_list(request, slug):
     event = get_event_or_404(slug)
     page = Paginator(event.staff_shifts.all(), 50).get_page(request.GET.get("page"))
-    return render(request, "manage/data_shifts.html", {"event": event, "page": page})
+    return render(request, "settings/data_shifts.html", {"event": event, "page": page})
 
 
 @require_role(MANAGER)
@@ -151,7 +151,7 @@ def shift_edit(request, slug, shift_id=None):
             return redirect("events:data_shifts", slug=slug)
     else:
         form = StaffShiftForm(instance=shift)
-    return render(request, "manage/data_form.html", {
+    return render(request, "settings/data_form.html", {
         "event": event, "form": form,
         "title": "Edit Staff Shift" if shift else "New Staff Shift",
         "back_url_name": "events:data_shifts",
