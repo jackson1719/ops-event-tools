@@ -83,13 +83,21 @@ def issue_certificate(request):
 @require_role(ADMIN)
 @require_POST
 def trigger_backup(request):
-    import os
-    from sync.backups import perform_backup
+    import threading
 
-    try:
-        path = perform_backup()
-        audit(None, request.user, "backup", f"Manual backup: {os.path.basename(path)}")
-        messages.success(request, f"Backup written: {os.path.basename(path)}")
-    except Exception as exc:
-        messages.error(request, f"Backup failed: {exc}")
+    from django.db import connection
+
+    from sync.backups import perform_backup_locked
+
+    def run():
+        try:
+            perform_backup_locked()
+        finally:
+            connection.close()
+
+    # Backing up the media tree can exceed gunicorn's 30s worker timeout, so
+    # run it in the background (perform_backup_locked is flock-guarded).
+    threading.Thread(target=run, daemon=True).start()
+    audit(None, request.user, "backup", "Manual backup started")
+    messages.info(request, "Backup started in the background.")
     return redirect("accounts:site_settings")

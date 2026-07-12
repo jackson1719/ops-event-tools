@@ -37,17 +37,17 @@ def sync_event(event: Event) -> None:
         log.info("Event %s has no spreadsheet configured; skipping.", event.slug)
         return
 
-    # Cross-process running guard
-    event.refresh_from_db()
-    if (
-        event.last_sync_status == "running"
-        and event.last_sync_at
-        and timezone.now() - event.last_sync_at < RUNNING_STALE_AFTER
-    ):
+    # Atomically claim the run: only the query that flips status→running wins,
+    # so a manual trigger and the timer (or two clicks) can't both proceed.
+    stale_before = timezone.now() - RUNNING_STALE_AFTER
+    claimed = (
+        Event.objects.filter(pk=event.pk)
+        .exclude(last_sync_status="running", last_sync_at__gte=stale_before)
+        .update(last_sync_at=timezone.now(), last_sync_status="running")
+    )
+    if not claimed:
         log.info("Sync already running for %s; skipping.", event.slug)
         return
-
-    Event.objects.filter(pk=event.pk).update(last_sync_at=timezone.now(), last_sync_status="running")
 
     try:
         data = fetch_event_sheets(event)
@@ -191,7 +191,11 @@ def _apply(event: Event, data: dict) -> list[str]:
     StaffShift.objects.bulk_create(shift_objs)
 
     # --- Checklist: replace from sheet (sheet is authoritative; toggles write back) ---
-    if data["checklist"] is not None:
+    # Guard against a transient empty read (e.g. fetched mid write-back, between
+    # the sheet's clear() and update()) wiping existing checklist state.
+    if data["checklist"] == [] and ChecklistItem.objects.filter(room__event=event).exists():
+        warnings.append("Checklist tab returned no rows; keeping existing checklist state.")
+    elif data["checklist"] is not None:
         ChecklistItem.objects.filter(room__event=event).delete()
         checklist_objs = []
         for i, row in enumerate(data["checklist"]):

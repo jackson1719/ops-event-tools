@@ -102,6 +102,9 @@ class IssueFlowTests(TestCase):
         cfg.save()
 
     def test_http01_flow_writes_and_cleans_challenge(self):
+        from django.test import override_settings
+        self.enterContext(override_settings(ALLOWED_HOSTS=["test.example.com", "testserver"]))
+
         chall = MagicMock()
         chall.chall.encode.return_value = "tokenA"
         chall.chall.key_authorization.return_value = "tokenA.kthumb"

@@ -155,7 +155,19 @@ def _respond_http01(cfg, challenge_body, account_key):
 
 
 def issue_certificate() -> None:
-    """Order a certificate for cfg.ssl_domain. Records status on SiteConfig."""
+    """Order a certificate for cfg.ssl_domain, guarded so scheduler renewals and
+    manual triggers can't run concurrently (the key/cert file swap would race).
+    Records status on SiteConfig."""
+    from .locks import Locked, exclusive
+
+    try:
+        with exclusive("acme-issue"):
+            _issue_certificate()
+    except Locked:
+        log.info("Certificate issuance already in progress; skipping.")
+
+
+def _issue_certificate() -> None:
     from accounts.models import SiteConfig
 
     cfg = SiteConfig.load()
@@ -167,6 +179,12 @@ def issue_certificate() -> None:
             raise RuntimeError("No domain configured")
         if cfg.acme_method == "dns01" and not cfg.cloudflare_api_token:
             raise RuntimeError("DNS-01 selected but no Cloudflare API token configured")
+        if cfg.acme_method == "http01" and cfg.ssl_domain not in settings.ALLOWED_HOSTS \
+                and "*" not in settings.ALLOWED_HOSTS:
+            raise RuntimeError(
+                f"HTTP-01 needs '{cfg.ssl_domain}' in ALLOWED_HOSTS (.env) so Let's "
+                "Encrypt's validation request isn't rejected with HTTP 400."
+            )
 
         acme_client = _make_client(cfg)
         account_key = acme_client.net.key
@@ -262,6 +280,10 @@ def _renewal_loop():
 def start_renewal_scheduler():
     import threading
 
+    from .locks import single_runner
+
+    if not single_runner("acme-renewal"):
+        return
     t = threading.Thread(target=_renewal_loop, daemon=True, name="acme-renewal")
     t.start()
     log.info("ACME renewal scheduler started (checks every %dh)", RENEWAL_CHECK_SECONDS // 3600)

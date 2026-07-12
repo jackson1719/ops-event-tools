@@ -3,9 +3,16 @@ import zoneinfo
 from django.db import models
 
 
+def _path_slug(value: str) -> str:
+    """Filesystem-safe slug for a path component (no /, .., spaces)."""
+    keep = [c if (c.isalnum() or c in "-_") else "_" for c in value]
+    return "".join(keep) or "x"
+
+
 def room_image_path(instance, filename):
-    ext = filename.rsplit(".", 1)[-1].lower()
-    return f"room_images/{instance.event.slug}/{instance.pk or 'new'}_{instance.building}_{instance.room_number}.{ext}".replace(" ", "_")
+    ext = _path_slug(filename.rsplit(".", 1)[-1].lower()) or "img"
+    stem = f"{instance.pk or 'new'}_{_path_slug(instance.building)}_{_path_slug(instance.room_number)}"
+    return f"room_images/{instance.event.slug}/{stem}.{ext}"
 
 
 class Event(models.Model):

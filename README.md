@@ -106,6 +106,36 @@ Postgres later: `pip install psycopg`, set `DB_ENGINE=postgresql` +
 ./venv/bin/python manage.py test
 ```
 
+## Security notes / accepted trade-offs
+
+These are deliberate design choices, not oversights:
+
+- **Roles are global, not per-event.** A Manager manages *every* event in the
+  install; an Admin administers all events and users. Correct for a single-org
+  tool. Child objects are still event-scoped, so there's no cross-event data
+  bleed — but role grants are install-wide. Revisit if this ever becomes
+  multi-tenant.
+- **`SECURE_COOKIES` defaults off** so plain-HTTP LAN testing works. **Set it
+  `true` in `.env` for any HTTPS deployment** (Cloudflare tunnel or direct
+  8443) or session cookies ship without the Secure flag. The app refuses to
+  boot with the insecure default `SECRET_KEY` when `DEBUG` is off.
+- **Account enumeration is enabled** (friendly "unknown email" errors) — an
+  internal-tool trade-off. The custom login is non-enumerating and now
+  rate-limited (10 failures / 15 min per IP+username, keyed on
+  `CF-Connecting-IP`).
+- **Google email-auth auto-connects** a matching account: whoever controls the
+  Google mailbox for a user's email can sign in as them. Only set a user's
+  email to an address they control, especially for Manager/Admin.
+- **The iCal feed authenticates by a URL token** (calendar apps can't do
+  session login); the token appears in access logs. It's high-entropy but
+  long-lived — treat a personal calendar URL as a shared secret.
+- **Secrets live in the SQLite DB** (SMTP/Google/Cloudflare) by design. The DB
+  file is `chmod 600` and the systemd units set `UMask=0077`; back up the
+  `backups/` folder somewhere off-box since it contains those secrets.
+- **CSP is not yet enforced.** XSS is prevented by output-escaping; a
+  nonce-based Content-Security-Policy over the inline scripts is a future
+  hardening step.
+
 ## Direct HTTPS (ACME / Let's Encrypt)
 
 The app can serve HTTPS itself on **port 8443**, with certificates obtained and

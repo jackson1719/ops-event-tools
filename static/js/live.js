@@ -11,9 +11,14 @@
   const isTestMode = TEST_NOW_MINUTES !== null;
 
   function esc(str) {
-    const d = document.createElement('div');
-    d.textContent = str;
-    return d.innerHTML;
+    // Attribute-safe: values are interpolated into title="..."/value="..." too,
+    // so quotes must be encoded (textContent->innerHTML does not escape them).
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
   }
 
   const EVENT_COLORS = [

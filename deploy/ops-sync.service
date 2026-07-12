@@ -9,4 +9,5 @@ Group=jthomas
 WorkingDirectory=/opt/ops-event-tools
 EnvironmentFile=/opt/ops-event-tools/.env
 ExecStart=/opt/ops-event-tools/venv/bin/python manage.py sync_events --all
+UMask=0077
 ExecStartPost=/opt/ops-event-tools/venv/bin/python manage.py clearsessions

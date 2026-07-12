@@ -163,7 +163,12 @@ def staff_mine(request, slug):
 
 
 def _ics_escape(value: str) -> str:
-    return value.replace("\\", "\\\\").replace(";", "\\;").replace(",", "\\,").replace("\n", "\\n")
+    # Normalize all newline forms first so a stray CR can't inject a raw line
+    # into the CRLF-delimited feed, then escape per RFC 5545.
+    value = value.replace("\r\n", "\n").replace("\r", "\n")
+    return (
+        value.replace("\\", "\\\\").replace(";", "\\;").replace(",", "\\,").replace("\n", "\\n")
+    )
 
 
 @login_not_required

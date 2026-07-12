@@ -23,7 +23,6 @@ from django.conf import settings
 log = logging.getLogger(__name__)
 
 CHECK_INTERVAL_SECONDS = 15 * 60
-LOCK_STALE_SECONDS = 30 * 60
 BACKUP_PREFIX = "backup-"
 
 
@@ -85,10 +84,15 @@ def perform_backup() -> str:
             if settings.MEDIA_ROOT and os.path.isdir(settings.MEDIA_ROOT):
                 tar.add(settings.MEDIA_ROOT, arcname="media")
 
-        shutil.move(tmp_archive, archive_path)
+        # Land under a temp name on the destination filesystem, then atomically
+        # rename — a crash mid-copy can't leave a truncated "latest" archive
+        # that would suppress future backups.
+        staging = settings.BACKUP_DIR / f".{BACKUP_PREFIX}{stamp}.tar.gz.partial"
+        shutil.move(tmp_archive, staging)
+        os.replace(staging, archive_path)
 
-    # Retention
-    keep = _config().backup_keep
+    # Retention (never delete below 1, even if misconfigured to 0)
+    keep = max(1, _config().backup_keep)
     files = _backup_files()
     for old in files[: max(0, len(files) - keep)]:
         old.unlink(missing_ok=True)
@@ -98,29 +102,17 @@ def perform_backup() -> str:
     return str(archive_path)
 
 
-def _acquire_lock() -> bool:
-    lock_dir = settings.BACKUP_DIR / ".lock"
-    settings.BACKUP_DIR.mkdir(parents=True, exist_ok=True)
-    try:
-        lock_dir.mkdir()
-        return True
-    except FileExistsError:
-        # Break stale locks from crashed workers
-        try:
-            if time.time() - lock_dir.stat().st_mtime > LOCK_STALE_SECONDS:
-                lock_dir.rmdir()
-                lock_dir.mkdir()
-                return True
-        except OSError:
-            pass
-        return False
+def perform_backup_locked() -> str:
+    """perform_backup guarded by the shared exclusive lock so a manual trigger
+    and the scheduler (or two clicks) can never run concurrently."""
+    from .locks import Locked, exclusive
 
-
-def _release_lock():
     try:
-        (settings.BACKUP_DIR / ".lock").rmdir()
-    except OSError:
-        pass
+        with exclusive("backup"):
+            return perform_backup()
+    except Locked:
+        log.info("Backup already in progress; skipping.")
+        return ""
 
 
 def _backup_due(cfg) -> bool:
@@ -137,13 +129,8 @@ def _scheduler_loop():
     while True:
         try:
             cfg = _config()
-            if cfg.backup_enabled and _backup_due(cfg) and _acquire_lock():
-                try:
-                    # Re-check under the lock — another worker may have just finished
-                    if _backup_due(cfg):
-                        perform_backup()
-                finally:
-                    _release_lock()
+            if cfg.backup_enabled and _backup_due(cfg):
+                perform_backup_locked()
         except Exception:
             log.exception("Scheduled backup failed")
         finally:
@@ -152,8 +139,13 @@ def _scheduler_loop():
 
 
 def start_backup_scheduler():
-    """Always started with the server; enable/disable and pacing come from
-    SiteConfig, checked every cycle so Site Settings changes apply live."""
+    """Started with the server. A single-runner flock ensures only ONE process
+    across all gunicorn workers and both systemd units runs the loop; the rest
+    skip. Enable/disable and pacing come from SiteConfig, re-checked each cycle."""
+    from .locks import single_runner
+
+    if not single_runner("backup-scheduler"):
+        return
     t = threading.Thread(target=_scheduler_loop, daemon=True, name="backup-scheduler")
     t.start()
     log.info("Backup scheduler started (config from Site Settings, dir %s)", settings.BACKUP_DIR)

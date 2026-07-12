@@ -20,6 +20,8 @@ ExecStart=/opt/ops-event-tools/venv/bin/gunicorn config.wsgi:application \
 Restart=on-failure
 RestartSec=5
 
+UMask=0077
+PrivateTmp=true
 NoNewPrivileges=true
 ProtectSystem=strict
 ReadWritePaths=/opt/ops-event-tools

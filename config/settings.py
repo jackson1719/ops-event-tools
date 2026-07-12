@@ -22,13 +22,26 @@ def _load_dotenv():
         if not line or line.startswith("#") or "=" not in line:
             continue
         key, _, value = line.partition("=")
-        os.environ.setdefault(key.strip(), value.strip())
+        value = value.strip()
+        # Match systemd EnvironmentFile: strip one layer of surrounding quotes
+        # so dev (.env loader) and prod agree on the value.
+        if len(value) >= 2 and value[0] == value[-1] and value[0] in "\"'":
+            value = value[1:-1]
+        os.environ.setdefault(key.strip(), value)
 
 
 _load_dotenv()
 
-SECRET_KEY = os.getenv("SECRET_KEY", "insecure-dev-key-change-me")
 DEBUG = os.getenv("DEBUG", "false").lower() in ("1", "true", "yes")
+
+_INSECURE_KEY = "insecure-dev-key-change-me"
+SECRET_KEY = os.getenv("SECRET_KEY", _INSECURE_KEY)
+if not DEBUG and SECRET_KEY == _INSECURE_KEY:
+    from django.core.exceptions import ImproperlyConfigured
+    raise ImproperlyConfigured(
+        "SECRET_KEY must be set (env/.env) when DEBUG is off — refusing to boot "
+        "with the insecure development key."
+    )
 ALLOWED_HOSTS = [h.strip() for h in os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",") if h.strip()]
 CSRF_TRUSTED_ORIGINS = [o.strip() for o in os.getenv("CSRF_TRUSTED_ORIGINS", "").split(",") if o.strip()]
 
@@ -90,6 +103,14 @@ if _db_engine == "sqlite3":
         "default": {
             "ENGINE": "django.db.backends.sqlite3",
             "NAME": BASE_DIR / os.getenv("DB_NAME", "db.sqlite3"),
+            # WAL lets readers and the writer coexist; IMMEDIATE takes the write
+            # lock up front (avoids deadlock-on-upgrade); 20s busy timeout rides
+            # out the periodic sync's bulk write under concurrent toggles.
+            "OPTIONS": {
+                "transaction_mode": "IMMEDIATE",
+                "timeout": 20,
+                "init_command": "PRAGMA journal_mode=WAL; PRAGMA synchronous=NORMAL;",
+            },
         }
     }
 else:

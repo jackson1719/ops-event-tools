@@ -14,8 +14,11 @@ def fmt_time(dt: datetime, tz) -> str:
 
 
 def day_bounds(event: Event, d: date) -> tuple[datetime, datetime]:
+    # Next calendar midnight, not start+24h — correct across DST transitions
+    # (a spring-forward day is 23h, fall-back 25h).
     start = combine_aware(d, time(0, 0), event.tz)
-    return start, start + timedelta(days=1)
+    end = combine_aware(d + timedelta(days=1), time(0, 0), event.tz)
+    return start, end
 
 
 def schedule_days(event: Event) -> list[dict]:

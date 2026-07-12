@@ -7,6 +7,15 @@ from google.oauth2.service_account import Credentials
 SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
 
 
+def _safe_int(value, default=1) -> int:
+    """Coerce a sheet cell to int; a malformed value (e.g. '2x') falls back to
+    the default rather than aborting the whole event sync."""
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return default
+
+
 def get_client() -> gspread.Client:
     creds = Credentials.from_service_account_file(settings.GOOGLE_CREDENTIALS_FILE, scopes=SCOPES)
     return gspread.authorize(creds)
@@ -50,7 +59,7 @@ def fetch_event_sheets(event) -> dict[str, list[dict] | None]:
             "room_number": str(row.get("room_number", "")).strip(),
             "vendor": str(row.get("vendor", "")).strip(),
             "equipment_type": str(row.get("type", "")).strip(),
-            "quantity": int(row.get("qty", 1) or 1),
+            "quantity": _safe_int(row.get("qty", 1)),
             "item_name": str(row.get("equipment", "")).strip(),
         }
         for row in raw
