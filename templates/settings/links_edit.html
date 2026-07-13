@@ -27,7 +27,7 @@
             <input type="text" class="form-control" name="description" placeholder="Description" value="{{ link.description }}">
           </div>
           <div class="col-md-1">
-            <button type="button" class="btn btn-outline-danger btn-sm w-100" onclick="this.closest('.link-row').remove()">X</button>
+            <button type="button" class="btn btn-outline-danger btn-sm w-100" data-remove-closest=".link-row">X</button>
           </div>
         </div>
       </div>
@@ -40,7 +40,7 @@
   <button type="submit" class="btn btn-primary">Save Links</button>
 </form>
 
-<script>
+<script nonce="{{ csp_nonce }}">
 document.getElementById('add-link').addEventListener('click', function() {
   const html = `
     <div class="card mb-2 link-row">
@@ -50,7 +50,7 @@ document.getElementById('add-link').addEventListener('click', function() {
           <div class="col-md-4"><input type="url" class="form-control" name="url" placeholder="https://..."></div>
           <div class="col-md-2"><input type="text" class="form-control" name="category" placeholder="Category"></div>
           <div class="col-md-2"><input type="text" class="form-control" name="description" placeholder="Description"></div>
-          <div class="col-md-1"><button type="button" class="btn btn-outline-danger btn-sm w-100" onclick="this.closest('.link-row').remove()">X</button></div>
+          <div class="col-md-1"><button type="button" class="btn btn-outline-danger btn-sm w-100" data-remove-closest=".link-row">X</button></div>
         </div>
       </div>
     </div>`;

@@ -132,9 +132,15 @@ These are deliberate design choices, not oversights:
 - **Secrets live in the SQLite DB** (SMTP/Google/Cloudflare) by design. The DB
   file is `chmod 600` and the systemd units set `UMask=0077`; back up the
   `backups/` folder somewhere off-box since it contains those secrets.
-- **CSP is not yet enforced.** XSS is prevented by output-escaping; a
-  nonce-based Content-Security-Policy over the inline scripts is a future
-  hardening step.
+- **Content-Security-Policy is enforced** via `ContentSecurityPolicyMiddleware`:
+  a per-request nonce with `script-src 'strict-dynamic'` and no
+  `'unsafe-inline'` for scripts, so an injected `<script>` or `on*=` handler
+  won't run even if output-escaping is ever bypassed. Inline event handlers
+  were replaced with `static/js/behaviors.js` (data-attribute driven) plus
+  nonced `<script>` blocks. `style-src` keeps `'unsafe-inline'` (inline
+  `style=` is pervasive and low-risk). The Django admin is exempted. If you add
+  a new inline `<script>`, give it `nonce="{{ csp_nonce }}"`; avoid inline
+  `on*=` handlers (use `behaviors.js` data-attributes or `addEventListener`).
 
 ## Direct HTTPS (ACME / Let's Encrypt)
 

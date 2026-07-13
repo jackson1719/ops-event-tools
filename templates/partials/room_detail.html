@@ -21,7 +21,7 @@
     <small class="text-muted">— {{ room.status_updated_by }}, {{ room.status_updated_at|date:"n/j g:i A" }}</small>
   {% endif %}
 </div>
-<script>
+<script nonce="{{ csp_nonce }}">
 document.getElementById('room-status-save').addEventListener('click', function() {
   const status = document.getElementById('room-status-select').value;
   const note = document.getElementById('room-status-note').value;
@@ -52,14 +52,24 @@ document.getElementById('room-status-save').addEventListener('click', function()
          class="img-fluid rounded border border-secondary room-layout-img"
          style="max-height: 400px; cursor: pointer;"
          title="Click to fullscreen"
-         onclick="document.getElementById('layout-overlay').style.display='flex'">
+         id="layout-thumb">
   </div>
-  <div id="layout-overlay" onclick="this.style.display='none'"
+  <div id="layout-overlay"
        style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;z-index:2000;background:rgba(0,0,0,0.95);cursor:pointer;align-items:center;justify-content:center;">
     <img src="{{ room.layout_image.url }}"
          alt="Layout for {{ room.name }}"
          style="max-width:95vw;max-height:95vh;object-fit:contain;">
   </div>
+  <script nonce="{{ csp_nonce }}">
+    (function() {
+      const thumb = document.getElementById('layout-thumb');
+      const overlay = document.getElementById('layout-overlay');
+      if (thumb && overlay) {
+        thumb.addEventListener('click', function() { overlay.style.display = 'flex'; });
+        overlay.addEventListener('click', function() { overlay.style.display = 'none'; });
+      }
+    })();
+  </script>
 {% endif %}
 
 {% if equipment_by_type %}
@@ -147,7 +157,7 @@ document.getElementById('room-status-save').addEventListener('click', function()
       </label>
     {% endfor %}
   </div>
-  <script>
+  <script nonce="{{ csp_nonce }}">
   document.querySelectorAll('.checklist-toggle').forEach(function(cb) {
     cb.addEventListener('change', function() {
       const checked = this.checked ? '1' : '0';

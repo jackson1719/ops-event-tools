@@ -43,6 +43,6 @@
     </table>
   {% endfor %}
 
-  <script>window.print();</script>
+  <script nonce="{{ csp_nonce }}">window.print();</script>
 </body>
 </html>

@@ -103,7 +103,7 @@
   <p class="text-muted">Loading...</p>
 </div>
 
-<script>
+<script nonce="{{ csp_nonce }}">
 // Update room dropdown when building changes
 document.getElementById('filter-building').addEventListener('change', function() {
   fetch("{% url 'events:schedule_rooms' event.slug %}?building=" + encodeURIComponent(this.value))

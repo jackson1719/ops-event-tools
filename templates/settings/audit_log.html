@@ -8,7 +8,7 @@
 </div>
 
 <form method="GET" class="mb-3" style="max-width:300px;">
-  <select name="action" class="form-select" onchange="this.form.submit()">
+  <select name="action" class="form-select" data-autosubmit>
     <option value="">All actions</option>
     {% for a in actions %}
       <option value="{{ a }}" {% if a == selected_action %}selected{% endif %}>{{ a }}</option>

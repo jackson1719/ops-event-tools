@@ -1,5 +1,45 @@
+import secrets
+
 from django.conf import settings
 from django.contrib.auth.middleware import LoginRequiredMiddleware as DjangoLoginRequiredMiddleware
+
+
+class ContentSecurityPolicyMiddleware:
+    """Nonce-based CSP.
+
+    script-src uses a per-request nonce + 'strict-dynamic': injected inline
+    scripts and on*= handlers are blocked, while our own nonce'd scripts (and
+    anything they load — HTMX swaps, the fetch-and-re-run-scripts pattern, the
+    CDN bundles) stay trusted. style-src keeps 'unsafe-inline' because inline
+    style="" attributes are pervasive and script is the real XSS vector.
+
+    The Django admin (superuser-only, ships its own unnonced inline JS) is
+    exempted.
+    """
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        request.csp_nonce = secrets.token_urlsafe(16)
+        response = self.get_response(request)
+        if request.path.startswith("/admin/") or "Content-Security-Policy" in response:
+            return response
+        nonce = request.csp_nonce
+        response["Content-Security-Policy"] = "; ".join([
+            "default-src 'self'",
+            f"script-src 'self' 'nonce-{nonce}' 'strict-dynamic' https:",
+            "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net",
+            "img-src 'self' data:",
+            "font-src 'self'",
+            "connect-src 'self'",
+            "object-src 'none'",
+            "base-uri 'self'",
+            "frame-ancestors 'none'",
+            "form-action 'self'",
+        ])
+        return response
+
 
 
 class LoginRequiredMiddleware(DjangoLoginRequiredMiddleware):

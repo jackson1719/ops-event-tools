@@ -279,14 +279,14 @@
 
 {% block scripts %}
 {{ events_data|json_script:"events-data" }}
-<script>
+<script nonce="{{ csp_nonce }}">
   const EVENTS = JSON.parse(document.getElementById('events-data').textContent);
   const TEST_NOW_MINUTES = {{ test_now_minutes|default_if_none:"null" }};
   const LIVE_URL = "{% url 'events:live' event.slug %}";
 </script>
 {% load static %}
-<script src="{% static 'js/live.js' %}"></script>
-<script>
+<script nonce="{{ csp_nonce }}" src="{% static 'js/live.js' %}"></script>
+<script nonce="{{ csp_nonce }}">
 (function() {
   // Desktop resize handle
   const handle = document.getElementById('room-col-resize');

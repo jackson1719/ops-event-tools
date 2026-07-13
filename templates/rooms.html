@@ -56,7 +56,7 @@
   </div>
 </div>
 
-<script>
+<script nonce="{{ csp_nonce }}">
 // Desktop: highlight active room
 document.body.addEventListener('htmx:afterOnLoad', function(evt) {
   document.querySelectorAll('.room-link').forEach(el => el.classList.remove('active'));

@@ -1,7 +1,7 @@
 <div id="timeline-container" style="overflow-x:auto;"></div>
 
 {{ shifts_data|json_script:"timeline-data" }}
-<script>
+<script nonce="{{ csp_nonce }}">
 (function() {
   const SHIFTS = JSON.parse(document.getElementById('timeline-data').textContent);
   const ROW_HEIGHT = 40;

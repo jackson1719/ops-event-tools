@@ -25,7 +25,7 @@
         <td class="text-nowrap">
           <a href="{% url 'events:data_shift_edit' event.slug shift.pk %}" class="btn btn-outline-light btn-sm">Edit</a>
           <form method="POST" action="{% url 'events:data_shift_delete' event.slug shift.pk %}" class="d-inline"
-                onsubmit="return confirm('Delete this shift?');">
+                data-confirm="Delete this shift?">
             {% csrf_token %}
             <button type="submit" class="btn btn-outline-danger btn-sm">Delete</button>
           </form>

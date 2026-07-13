@@ -14,7 +14,7 @@
 
 <form method="GET" class="row g-2 mb-3">
   <div class="col-auto">
-    <select name="building" class="form-select form-select-sm" onchange="this.form.submit()">
+    <select name="building" class="form-select form-select-sm" data-autosubmit>
       <option value="">All Buildings</option>
       {% for b in buildings %}
         <option value="{{ b }}" {% if b == selected_building %}selected{% endif %}>{{ b }}</option>
@@ -22,7 +22,7 @@
     </select>
   </div>
   <div class="col-auto">
-    <select name="day" class="form-select form-select-sm" onchange="this.form.submit()">
+    <select name="day" class="form-select form-select-sm" data-autosubmit>
       <option value="">All Days</option>
       {% for d in days %}
         <option value="{{ d.value }}" {% if d.value == selected_day %}selected{% endif %}>{{ d.label }}</option>
@@ -56,7 +56,7 @@
         <td class="text-nowrap">
           <a href="{% url 'events:data_schedule_edit' event.slug item.pk %}" class="btn btn-outline-light btn-sm">Edit</a>
           <form method="POST" action="{% url 'events:data_schedule_delete' event.slug item.pk %}" class="d-inline"
-                onsubmit="return confirm('Delete {{ item.title|escapejs }}?');">
+                data-confirm="Delete {{ item.title }}?">
             {% csrf_token %}
             <button type="submit" class="btn btn-outline-danger btn-sm">Delete</button>
           </form>

@@ -28,7 +28,7 @@
         <td class="text-nowrap">
           <a href="{% url 'events:data_room_edit' event.slug room.pk %}" class="btn btn-outline-light btn-sm">Edit</a>
           <form method="POST" action="{% url 'events:data_room_delete' event.slug room.pk %}" class="d-inline"
-                onsubmit="return confirm('Delete {{ room }} and its equipment/checklist?');">
+                data-confirm="Delete {{ room }} and its equipment/checklist?">
             {% csrf_token %}
             <button type="submit" class="btn btn-outline-danger btn-sm">Delete</button>
           </form>

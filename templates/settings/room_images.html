@@ -99,7 +99,7 @@
   {% endfor %}
 </div>
 
-<script>
+<script nonce="{{ csp_nonce }}">
 (function() {
   const zone = document.getElementById('drop-zone');
   const input = document.getElementById('bulk-input');
